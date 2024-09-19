@@ -9,10 +9,9 @@ export function NotificationInbox({
 }: { 
   userId: string, 
   initialInvitations: Invitation[], 
-  onInvitationResponse: (invitationId: string, accept: boolean) => void 
+  onInvitationResponse: (invitationId: string, accept: boolean) => void
 }) {
   const [invitations, setInvitations] = useState<Invitation[]>(initialInvitations);
-  const fetcher = useFetcher<Invitation[]>();
 
   const handleInvitationResponse = (invitationId: string, accept: boolean) => {
     onInvitationResponse(invitationId, accept);

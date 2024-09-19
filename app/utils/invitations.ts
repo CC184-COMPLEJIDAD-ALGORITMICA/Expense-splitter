@@ -3,7 +3,35 @@ import { Invitation } from "~/types";
 
 export async function inviteUserToJunta(juntaId: string, invitedUserId: string, inviterId: string) {
   try {
-    console.log("Creating invitation with:", { juntaId, invitedUserId, inviterId });
+    // Verificar que el usuario no se esté invitando a sí mismo
+    if (invitedUserId === inviterId) {
+      return { success: false, message: "You cannot invite yourself" };
+    }
+
+    // Verificar si ya existe una invitación pendiente para este usuario en esta junta
+    const existingInvitation = await db.invitation.findFirst({
+      where: {
+        juntaId,
+        invitedUserId,
+        status: "PENDING"
+      }
+    });
+
+    if (existingInvitation) {
+      return { success: false, message: "An invitation for this user is already pending" };
+    }
+
+    // Verificar si el usuario ya es miembro de la junta
+    const junta = await db.junta.findUnique({
+      where: { id: juntaId },
+      include: { members: true }
+    });
+
+    if (junta?.members.some(member => member.id === invitedUserId)) {
+      return { success: false, message: "This user is already a member of the junta" };
+    }
+
+    // Crear la invitación si todas las validaciones pasan
     const invitation = await db.invitation.create({
       data: {
         juntaId,
@@ -17,6 +45,7 @@ export async function inviteUserToJunta(juntaId: string, invitedUserId: string, 
         invitedUser: { select: { username: true } }
       }
     });
+
     console.log("Created invitation:", invitation);
     return { success: true, message: "Invitation sent successfully", invitation };
   } catch (error) {
@@ -80,16 +109,16 @@ export async function respondToInvitation(invitationId: string, accept: boolean)
 
       await db.junta.update({
         where: { id: invitation.juntaId },
-        data: { members: { connect: { id: invitation.invitedUserId } } } }
-      );
+        data: { members: { connect: { id: invitation.invitedUserId } } }
+      });
 
       console.log("Invitation accepted and user added to junta");
     } else {
-      await db.invitation.update({
-        where: { id: invitationId },
-        data: { status: "REJECTED" }
+      // Eliminar la invitación en lugar de marcarla como rechazada
+      await db.invitation.delete({
+        where: { id: invitationId }
       });
-      console.log("Invitation rejected");
+      console.log("Invitation rejected and deleted");
     }
     return { success: true, message: accept ? "Invitation accepted" : "Invitation rejected" };
   } catch (error) {

@@ -46,7 +46,7 @@ var require_juntas = __commonJS({
 
 // app/routes/_index.tsx
 var import_node = __toESM(require_node(), 1);
-var import_react4 = __toESM(require_react(), 1);
+var import_react3 = __toESM(require_react(), 1);
 var import_auth = __toESM(require_auth(), 1);
 var import_db = __toESM(require_db(), 1);
 
@@ -358,7 +358,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\components\\NotificationInbox.tsx"
   );
-  import.meta.hot.lastModified = "1726719478597.0276";
+  import.meta.hot.lastModified = "1726734986184.9038";
 }
 function NotificationInbox({
   userId,
@@ -367,7 +367,6 @@ function NotificationInbox({
 }) {
   _s();
   const [invitations, setInvitations] = (0, import_react.useState)(initialInvitations);
-  const fetcher = useFetcher();
   const handleInvitationResponse = (invitationId, accept) => {
     onInvitationResponse(invitationId, accept);
     setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
@@ -375,13 +374,13 @@ function NotificationInbox({
   if (invitations.length === 0)
     return /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("p", { children: "No pending invitations" }, void 0, false, {
       fileName: "app/components/NotificationInbox.tsx",
-      lineNumber: 36,
+      lineNumber: 34,
       columnNumber: 40
     }, this);
   return /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { children: [
     /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("h2", { children: "Invitations" }, void 0, false, {
       fileName: "app/components/NotificationInbox.tsx",
-      lineNumber: 38,
+      lineNumber: 36,
       columnNumber: 7
     }, this),
     invitations.map((invitation) => /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "mb-4 p-4 border rounded", children: [
@@ -391,33 +390,31 @@ function NotificationInbox({
         invitation.junta.name
       ] }, void 0, true, {
         fileName: "app/components/NotificationInbox.tsx",
-        lineNumber: 40,
+        lineNumber: 38,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("button", { onClick: () => handleInvitationResponse(invitation.id, true), children: "Accept" }, void 0, false, {
         fileName: "app/components/NotificationInbox.tsx",
-        lineNumber: 41,
+        lineNumber: 39,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("button", { onClick: () => handleInvitationResponse(invitation.id, false), children: "Reject" }, void 0, false, {
         fileName: "app/components/NotificationInbox.tsx",
-        lineNumber: 42,
+        lineNumber: 40,
         columnNumber: 11
       }, this)
     ] }, invitation.id, true, {
       fileName: "app/components/NotificationInbox.tsx",
-      lineNumber: 39,
+      lineNumber: 37,
       columnNumber: 38
     }, this))
   ] }, void 0, true, {
     fileName: "app/components/NotificationInbox.tsx",
-    lineNumber: 37,
+    lineNumber: 35,
     columnNumber: 10
   }, this);
 }
-_s(NotificationInbox, "wVSSYL8oR+SWe+M+LCVUG4uwMHU=", false, function() {
-  return [useFetcher];
-});
+_s(NotificationInbox, "lvJHSu2WX8AycHfHJjHP2isI+Y0=");
 _c = NotificationInbox;
 var _c;
 $RefreshReg$(_c, "NotificationInbox");
@@ -444,7 +441,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\routes\\_index.tsx"
   );
-  import.meta.hot.lastModified = "1726732484821.4475";
+  import.meta.hot.lastModified = "1726734985160.5369";
 }
 function convertDates(junta) {
   return {
@@ -464,23 +461,23 @@ function Index() {
     invitations: initialInvitations
   } = useLoaderData();
   const actionData = useActionData();
-  const [language, setLanguage] = (0, import_react4.useState)("es");
-  const [showTutorial, setShowTutorial] = (0, import_react4.useState)(user?.isNewUser ?? false);
-  const [selectedJunta, setSelectedJunta] = (0, import_react4.useState)(null);
-  const [showNotifications, setShowNotifications] = (0, import_react4.useState)(false);
-  const [splits, setSplits] = (0, import_react4.useState)([]);
-  const [splitAmongAll, setSplitAmongAll] = (0, import_react4.useState)(false);
-  const [juntas, setJuntas] = (0, import_react4.useState)(initialJuntas.map(convertDates));
-  const [localExpenses, setLocalExpenses] = (0, import_react4.useState)(initialLocalExpenses);
-  const [invitations, setInvitations] = (0, import_react4.useState)(initialInvitations);
+  const [language, setLanguage] = (0, import_react3.useState)("es");
+  const [showTutorial, setShowTutorial] = (0, import_react3.useState)(user?.isNewUser ?? false);
+  const [selectedJunta, setSelectedJunta] = (0, import_react3.useState)(null);
+  const [showNotifications, setShowNotifications] = (0, import_react3.useState)(false);
+  const [splits, setSplits] = (0, import_react3.useState)([]);
+  const [splitAmongAll, setSplitAmongAll] = (0, import_react3.useState)(false);
+  const [juntas, setJuntas] = (0, import_react3.useState)(initialJuntas.map(convertDates));
+  const [localExpenses, setLocalExpenses] = (0, import_react3.useState)(initialLocalExpenses);
+  const [invitations, setInvitations] = (0, import_react3.useState)(initialInvitations);
   const fetcher = useFetcher();
   const submit = useSubmit();
   const t = translations[language];
   const toggleLanguage = () => {
     setLanguage((prev) => prev === "es" ? "en" : "es");
   };
-  const [splitType, setSplitType] = (0, import_react4.useState)("equal");
-  const handleCalculateSplits = (0, import_react4.useCallback)(() => {
+  const [splitType, setSplitType] = (0, import_react3.useState)("equal");
+  const handleCalculateSplits = (0, import_react3.useCallback)(() => {
     if (selectedJunta) {
       const calculatedSplits = splitType === "equal" ? calculateEqualSplits(selectedJunta.expenses, selectedJunta.members) : calculateIndividualSplits(selectedJunta.expenses, selectedJunta.members);
       setSplits(calculatedSplits);
@@ -489,9 +486,18 @@ function Index() {
       setSplits(calculatedSplits);
     }
   }, [selectedJunta, localExpenses, user, splitType]);
-  (0, import_react4.useEffect)(() => {
+  (0, import_react3.useEffect)(() => {
     handleCalculateSplits();
   }, [selectedJunta, localExpenses, handleCalculateSplits]);
+  const handleInvitationResponse = (invitationId, accept) => {
+    fetcher.submit({
+      action: "respondToInvitation",
+      invitationId,
+      accept: accept.toString()
+    }, {
+      method: "post"
+    });
+  };
   const handleInviteUser = async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -504,64 +510,28 @@ function Index() {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
-    let splitAmong = formData.get("splitAmong");
-    if (splitAmongAll && selectedJunta) {
-      splitAmong = selectedJunta.members.map((member) => member.username).join(",");
-    }
-    if (!splitAmong) {
-      alert(t.pleaseSpecifySplitAmong);
-      return;
-    }
-    formData.set("splitAmong", splitAmong);
-    if (selectedJunta) {
-      formData.set("action", "addJuntaExpense");
+    const action = formData.get("action");
+    if (action === "addLocalExpense") {
+      fetcher.submit(formData, {
+        method: "post"
+      });
+    } else if (action === "addJuntaExpense") {
+      let splitAmong = formData.get("splitAmong");
+      if (splitAmongAll && selectedJunta) {
+        splitAmong = selectedJunta.members.map((member) => member.username).join(",");
+      }
+      if (!splitAmong) {
+        alert(t.pleaseSpecifySplitAmong);
+        return;
+      }
+      formData.set("splitAmong", splitAmong);
       formData.set("juntaId", selectedJunta.id);
-    } else {
-      formData.set("action", "addLocalExpense");
+      fetcher.submit(formData, {
+        method: "post"
+      });
     }
-    fetcher.submit(formData, {
-      method: "post"
-    });
     form.reset();
   };
-  const handleInvitationResponse = (invitationId, accept) => {
-    fetcher.submit({
-      action: "respondToInvitation",
-      invitationId,
-      accept: accept.toString()
-    }, {
-      method: "post"
-    });
-    setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
-    if (accept) {
-      const acceptedInvitation = invitations.find((inv) => inv.id === invitationId);
-      if (acceptedInvitation && acceptedInvitation.junta) {
-        setJuntas((prev) => [...prev, {
-          id: acceptedInvitation.junta.id,
-          name: acceptedInvitation.junta.name,
-          ownerId: acceptedInvitation.inviter.id,
-          members: [acceptedInvitation.inviter],
-          expenses: []
-        }]);
-      }
-    }
-  };
-  (0, import_react4.useEffect)(() => {
-    if (fetcher.data) {
-      if ("success" in fetcher.data) {
-        if (fetcher.data.success) {
-          alert(fetcher.data.message || "Invitation sent successfully");
-        } else {
-          alert(fetcher.data.message || "Failed to invite user");
-        }
-      }
-    }
-  }, [fetcher.data]);
-  (0, import_react4.useEffect)(() => {
-    if (actionData?.junta) {
-      setSelectedJunta(convertDates(actionData.junta));
-    }
-  }, [actionData]);
   const handleDeleteExpense = (expenseId) => {
     fetcher.submit({
       action: "deleteExpense",
@@ -569,20 +539,51 @@ function Index() {
     }, {
       method: "post"
     });
-    if (selectedJunta) {
-      setSelectedJunta((prevJunta) => {
-        if (prevJunta) {
-          return {
-            ...prevJunta,
-            expenses: prevJunta.expenses.filter((expense) => expense.id !== expenseId)
-          };
-        }
-        return prevJunta;
-      });
-    } else {
-      setLocalExpenses((prevExpenses) => prevExpenses.filter((expense) => expense.id !== expenseId));
-    }
   };
+  (0, import_react3.useEffect)(() => {
+    if (fetcher.data) {
+      if (fetcher.data.success) {
+        if ("expense" in fetcher.data && fetcher.data.expense) {
+          const newExpense = {
+            ...fetcher.data.expense,
+            createdAt: new Date(fetcher.data.expense.createdAt)
+          };
+          setLocalExpenses((prevExpenses) => [...prevExpenses, newExpense]);
+        } else if ("deletedExpenseId" in fetcher.data && fetcher.data.deletedExpenseId) {
+          const deletedId = fetcher.data.deletedExpenseId;
+          if (selectedJunta) {
+            setSelectedJunta((prevJunta) => {
+              if (prevJunta) {
+                return {
+                  ...prevJunta,
+                  expenses: prevJunta.expenses.filter((expense) => expense.id !== deletedId)
+                };
+              }
+              return null;
+            });
+          } else {
+            setLocalExpenses((prevExpenses) => prevExpenses.filter((expense) => expense.id !== deletedId));
+          }
+        } else if ("junta" in fetcher.data && fetcher.data.junta) {
+          const newJunta = {
+            ...fetcher.data.junta,
+            expenses: fetcher.data.junta.expenses.map((expense) => ({
+              ...expense,
+              createdAt: new Date(expense.createdAt)
+            }))
+          };
+          setJuntas((prevJuntas) => [...prevJuntas, newJunta]);
+        }
+      } else if ("error" in fetcher.data && fetcher.data.error) {
+        console.error("Error:", fetcher.data.error);
+      }
+    }
+  }, [fetcher.data, selectedJunta]);
+  (0, import_react3.useEffect)(() => {
+    if (actionData?.junta) {
+      setSelectedJunta(convertDates(actionData.junta));
+    }
+  }, [actionData]);
   return /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "container mx-auto p-4 bg-gray-100 min-h-screen", children: [
     user ? /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)(import_jsx_dev_runtime2.Fragment, { children: [
       /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "flex justify-between items-center mb-6", children: [
@@ -593,98 +594,98 @@ function Index() {
           "!"
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 311,
+          lineNumber: 312,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)(Form, { method: "post", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "hidden", name: "action", value: "logout" }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 313,
+            lineNumber: 314,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { type: "submit", className: "bg-red-500 text-white p-2 rounded hover:bg-red-600 transition", children: t.logout }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 314,
+            lineNumber: 315,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 312,
+          lineNumber: 313,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 310,
+        lineNumber: 311,
         columnNumber: 11
       }, this),
       showTutorial && /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "bg-white p-6 rounded-lg shadow-md mb-6", children: [
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("h2", { className: "text-2xl font-bold mb-4", children: t.tutorial.welcome }, void 0, false, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 321,
+          lineNumber: 322,
           columnNumber: 15
         }, this),
         t.tutorial.algorithms.map((algo, index) => /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "mb-4", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("h3", { className: "text-xl font-semibold", children: algo.name }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 323,
+            lineNumber: 324,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("p", { children: algo.description }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 324,
+            lineNumber: 325,
             columnNumber: 19
           }, this)
         ] }, index, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 322,
+          lineNumber: 323,
           columnNumber: 59
         }, this)),
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { onClick: () => setShowTutorial(false), className: "mt-4 bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition", children: t.tutorial.close }, void 0, false, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 326,
+          lineNumber: 327,
           columnNumber: 15
         }, this)
       ] }, void 0, true, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 320,
+        lineNumber: 321,
         columnNumber: 28
       }, this),
       /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "mb-6", children: [
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("h2", { className: "text-2xl font-semibold mb-4 text-blue-800", children: t.createJunta }, void 0, false, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 332,
+          lineNumber: 333,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)(Form, { method: "post", className: "flex space-x-2", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "hidden", name: "action", value: "createJunta" }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 334,
+            lineNumber: 335,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "text", name: "juntaName", placeholder: t.juntaName, className: "flex-grow border p-2 rounded", required: true }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 335,
+            lineNumber: 336,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { type: "submit", className: "bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition", children: t.create }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 336,
+            lineNumber: 337,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 333,
+          lineNumber: 334,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 331,
+        lineNumber: 332,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "mb-6", children: [
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("h2", { className: "text-2xl font-semibold mb-4 text-blue-800", children: t.yourJuntas }, void 0, false, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 343,
+          lineNumber: 344,
           columnNumber: 13
         }, this),
         Array.isArray(juntas) && juntas.length > 0 ? /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("select", { onChange: (e) => {
@@ -693,130 +694,130 @@ function Index() {
         }, className: "w-full p-2 border rounded mb-4", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("option", { value: "", children: t.selectJunta }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 348,
+            lineNumber: 349,
             columnNumber: 17
           }, this),
           juntas.map((j) => /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("option", { value: j.id, children: j.name }, j.id, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 349,
+            lineNumber: 350,
             columnNumber: 34
           }, this))
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 344,
+          lineNumber: 345,
           columnNumber: 59
         }, this) : /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("p", { children: t.noJuntas }, void 0, false, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 352,
+          lineNumber: 353,
           columnNumber: 27
         }, this)
       ] }, void 0, true, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 342,
+        lineNumber: 343,
         columnNumber: 11
       }, this),
       selectedJunta && /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "bg-white p-6 rounded-lg shadow-md mb-6", children: [
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("h3", { className: "text-xl font-semibold mb-4 text-blue-700", children: selectedJunta.name }, void 0, false, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 356,
+          lineNumber: 357,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)(Form, { method: "post", onSubmit: handleInviteUser, className: "mb-4", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "hidden", name: "action", value: "inviteToJunta" }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 359,
+            lineNumber: 360,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "hidden", name: "juntaId", value: selectedJunta.id }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 360,
+            lineNumber: 361,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "flex space-x-2", children: [
             /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "text", name: "invitedUsername", placeholder: t.inviteUser, className: "flex-grow border p-2 rounded", required: true }, void 0, false, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 362,
+              lineNumber: 363,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { type: "submit", className: "bg-green-500 text-white p-2 rounded hover:bg-green-600 transition", children: t.invite }, void 0, false, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 363,
+              lineNumber: 364,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 361,
+            lineNumber: 362,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 358,
+          lineNumber: 359,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)(Form, { method: "post", onSubmit: handleAddExpense, className: "mb-4", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "hidden", name: "action", value: "addJuntaExpense" }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 370,
+            lineNumber: 371,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "hidden", name: "juntaId", value: selectedJunta.id }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 371,
+            lineNumber: 372,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-2", children: [
             /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "text", name: "description", placeholder: t.description, className: "border p-2 rounded", required: true }, void 0, false, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 373,
+              lineNumber: 374,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "number", name: "amount", placeholder: t.amount, className: "border p-2 rounded", required: true }, void 0, false, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 374,
+              lineNumber: 375,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "flex items-center", children: [
               /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "text", name: "splitAmong", placeholder: t.splitAmong, className: "border p-2 rounded flex-grow", required: !splitAmongAll, disabled: splitAmongAll }, void 0, false, {
                 fileName: "app/routes/_index.tsx",
-                lineNumber: 376,
+                lineNumber: 377,
                 columnNumber: 21
               }, this),
               /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("label", { className: "ml-2 flex items-center", children: [
                 /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "checkbox", checked: splitAmongAll, onChange: () => setSplitAmongAll(!splitAmongAll), className: "mr-1" }, void 0, false, {
                   fileName: "app/routes/_index.tsx",
-                  lineNumber: 378,
+                  lineNumber: 379,
                   columnNumber: 23
                 }, this),
                 t.splitAmongAll
               ] }, void 0, true, {
                 fileName: "app/routes/_index.tsx",
-                lineNumber: 377,
+                lineNumber: 378,
                 columnNumber: 21
               }, this)
             ] }, void 0, true, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 375,
+              lineNumber: 376,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 372,
+            lineNumber: 373,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { type: "submit", className: "mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition", children: t.addExpense }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 383,
+            lineNumber: 384,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 369,
+          lineNumber: 370,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "mt-6", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("h4", { className: "text-lg font-semibold text-blue-600", children: t.juntaExpenses }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 390,
+            lineNumber: 391,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("ul", { className: "space-y-2", children: selectedJunta.expenses.map((expense) => /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("li", { className: "bg-gray-100 p-2 rounded flex justify-between items-center", children: [
@@ -831,32 +832,32 @@ function Index() {
               ")"
             ] }, void 0, true, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 393,
+              lineNumber: 394,
               columnNumber: 23
             }, this),
             /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { onClick: () => handleDeleteExpense(expense.id), className: "bg-red-500 text-white p-1 rounded hover:bg-red-600 transition", children: t.deleteExpense }, void 0, false, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 397,
+              lineNumber: 398,
               columnNumber: 23
             }, this)
           ] }, expense.id, true, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 392,
+            lineNumber: 393,
             columnNumber: 58
           }, this)) }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 391,
+            lineNumber: 392,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 389,
+          lineNumber: 390,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "mt-6", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("h4", { className: "text-lg font-semibold text-blue-600", children: t.myExpenses }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 406,
+            lineNumber: 407,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("ul", { className: "space-y-2", children: selectedJunta.expenses.filter((e) => e.paidBy === user?.id).map((expense) => /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("li", { className: "bg-gray-100 p-2 rounded flex justify-between items-center", children: [
@@ -866,26 +867,26 @@ function Index() {
               expense.amount.toFixed(2)
             ] }, void 0, true, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 409,
+              lineNumber: 410,
               columnNumber: 23
             }, this),
             /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { onClick: () => handleDeleteExpense(expense.id), className: "bg-red-500 text-white p-1 rounded hover:bg-red-600 transition", children: t.deleteExpense }, void 0, false, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 410,
+              lineNumber: 411,
               columnNumber: 23
             }, this)
           ] }, expense.id, true, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 408,
+            lineNumber: 409,
             columnNumber: 93
           }, this)) }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 407,
+            lineNumber: 408,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 405,
+          lineNumber: 406,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "mt-4 space-x-2", children: [
@@ -894,7 +895,7 @@ function Index() {
             handleCalculateSplits();
           }, className: "bg-purple-500 text-white p-2 rounded hover:bg-purple-600 transition", children: t.equalizeMoneyButton }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 418,
+            lineNumber: 419,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { onClick: () => {
@@ -902,242 +903,226 @@ function Index() {
             handleCalculateSplits();
           }, className: "bg-green-500 text-white p-2 rounded hover:bg-green-600 transition", children: t.calculateDivisionsButton }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 424,
+            lineNumber: 425,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 417,
+          lineNumber: 418,
           columnNumber: 15
         }, this),
         splits.length > 0 && /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "mt-4", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("h4", { className: "text-lg font-semibold text-blue-600", children: splitType === "equal" ? t.generalSplitsEqual : t.generalSplitsIndividual }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 434,
+            lineNumber: 435,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("ul", { className: "space-y-2", children: splits.map((split, index) => /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("li", { className: "bg-gray-100 p-2 rounded", children: `${split.from} ${t.owes} ${split.to}: ${split.amount.toFixed(2)}` }, index, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 438,
+            lineNumber: 439,
             columnNumber: 51
           }, this)) }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 437,
+            lineNumber: 438,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 433,
+          lineNumber: 434,
           columnNumber: 37
         }, this),
         splits.length > 0 && /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "mt-4", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("h4", { className: "text-lg font-semibold text-blue-600", children: t.mySplits }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 446,
+            lineNumber: 447,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("ul", { className: "space-y-2", children: splits.filter((split) => split.from === user?.username || split.to === user?.username).map((split, index) => /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("li", { className: "bg-gray-100 p-2 rounded", children: split.from === user?.username ? `${t.youOwe} ${split.to}: ${split.amount.toFixed(2)}` : `${split.from} ${t.owesYou}: ${split.amount.toFixed(2)}` }, index, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 448,
+            lineNumber: 449,
             columnNumber: 129
           }, this)) }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 447,
+            lineNumber: 448,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 445,
+          lineNumber: 446,
           columnNumber: 37
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)(Form, { method: "post", className: "mt-4", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "hidden", name: "action", value: "clearJunta" }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 455,
+            lineNumber: 456,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "hidden", name: "juntaId", value: selectedJunta.id }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 456,
+            lineNumber: 457,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { type: "submit", className: "bg-red-500 text-white p-2 rounded hover:bg-red-600 transition", children: t.clearJunta }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 457,
+            lineNumber: 458,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 454,
+          lineNumber: 455,
           columnNumber: 15
         }, this)
       ] }, void 0, true, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 355,
+        lineNumber: 356,
         columnNumber: 29
       }, this),
       /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "mb-6", children: [
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("h2", { className: "text-2xl font-semibold mb-4 text-blue-800", children: t.localExpenses }, void 0, false, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 464,
+          lineNumber: 465,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)(Form, { method: "post", onSubmit: handleAddExpense, className: "mb-4", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "hidden", name: "action", value: "addLocalExpense" }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 466,
+            lineNumber: 467,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-2", children: [
             /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "text", name: "description", placeholder: t.description, className: "border p-2 rounded", required: true }, void 0, false, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 468,
+              lineNumber: 469,
               columnNumber: 17
             }, this),
             /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "number", name: "amount", placeholder: t.amount, className: "border p-2 rounded", required: true }, void 0, false, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 469,
+              lineNumber: 470,
               columnNumber: 17
             }, this),
             /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "text", name: "splitAmong", placeholder: t.splitAmong, className: "border p-2 rounded", required: true }, void 0, false, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 470,
+              lineNumber: 471,
               columnNumber: 17
             }, this)
           ] }, void 0, true, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 467,
+            lineNumber: 468,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { type: "submit", className: "mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition", children: t.addLocalExpense }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 472,
+            lineNumber: 473,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 465,
+          lineNumber: 466,
           columnNumber: 13
         }, this),
-        /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("ul", { className: "space-y-2", children: Array.isArray(localExpenses) && localExpenses.map((expense) => /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("li", { className: "flex justify-between items-center bg-gray-100 p-2 rounded", children: [
+        /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("ul", { className: "space-y-2", children: localExpenses.map((expense) => /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("li", { className: "flex justify-between items-center bg-gray-100 p-2 rounded", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("span", { children: [
             expense.description,
             " - ",
-            expense.amount
-          ] }, void 0, true, {
-            fileName: "app/routes/_index.tsx",
-            lineNumber: 479,
-            columnNumber: 19
-          }, this),
-          /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)(Form, { method: "post", children: [
-            /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "hidden", name: "action", value: "deleteExpense" }, void 0, false, {
-              fileName: "app/routes/_index.tsx",
-              lineNumber: 481,
-              columnNumber: 21
-            }, this),
-            /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("input", { type: "hidden", name: "expenseId", value: expense.id }, void 0, false, {
-              fileName: "app/routes/_index.tsx",
-              lineNumber: 482,
-              columnNumber: 21
-            }, this),
-            /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { type: "submit", className: "text-red-500 hover:text-red-700 transition", children: t.deleteExpense }, void 0, false, {
-              fileName: "app/routes/_index.tsx",
-              lineNumber: 483,
-              columnNumber: 21
-            }, this)
+            expense.amount.toFixed(2)
           ] }, void 0, true, {
             fileName: "app/routes/_index.tsx",
             lineNumber: 480,
             columnNumber: 19
+          }, this),
+          /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { onClick: () => handleDeleteExpense(expense.id), className: "text-red-500 hover:text-red-700 transition", children: t.deleteExpense }, void 0, false, {
+            fileName: "app/routes/_index.tsx",
+            lineNumber: 481,
+            columnNumber: 19
           }, this)
         ] }, expense.id, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 478,
-          columnNumber: 77
+          lineNumber: 479,
+          columnNumber: 45
         }, this)) }, void 0, false, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 477,
+          lineNumber: 478,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { onClick: handleCalculateSplits, className: "mt-4 bg-purple-500 text-white p-2 rounded hover:bg-purple-600 transition", children: t.calculateSplits }, void 0, false, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 490,
+          lineNumber: 487,
           columnNumber: 13
         }, this),
         splits.length > 0 && /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "mt-4", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("h3", { className: "text-lg font-semibold text-blue-600", children: t.splits }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 495,
+            lineNumber: 492,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("ul", { className: "space-y-2", children: splits.map((split, index) => /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("li", { className: "bg-gray-100 p-2 rounded", children: `${split.from} ${t.owes} ${split.to}: ${split.amount.toFixed(2)}` }, index, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 497,
+            lineNumber: 494,
             columnNumber: 49
           }, this)) }, void 0, false, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 496,
+            lineNumber: 493,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 494,
+          lineNumber: 491,
           columnNumber: 35
         }, this)
       ] }, void 0, true, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 463,
+        lineNumber: 464,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("button", { onClick: () => setShowNotifications(!showNotifications), className: "bg-blue-500 text-white p-2 rounded mb-4 hover:bg-blue-600 transition", children: t.notifications }, void 0, false, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 504,
+        lineNumber: 501,
         columnNumber: 11
       }, this),
       showNotifications && user.id && /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)(NotificationInbox, { userId: user.id, initialInvitations: invitations, onInvitationResponse: handleInvitationResponse }, void 0, false, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 507,
+        lineNumber: 504,
         columnNumber: 44
       }, this)
     ] }, void 0, true, {
       fileName: "app/routes/_index.tsx",
-      lineNumber: 309,
+      lineNumber: 310,
       columnNumber: 15
     }, this) : /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "text-center", children: [
       /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("p", { className: "mb-4 text-xl", children: t.pleaseLogin }, void 0, false, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 509,
+        lineNumber: 506,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "space-x-4", children: [
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("a", { href: "/login", className: "bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition", children: t.login }, void 0, false, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 511,
+          lineNumber: 508,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("a", { href: "/register", className: "bg-green-500 text-white p-2 rounded hover:bg-green-600 transition", children: t.register }, void 0, false, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 514,
+          lineNumber: 511,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 510,
+        lineNumber: 507,
         columnNumber: 11
       }, this)
     ] }, void 0, true, {
       fileName: "app/routes/_index.tsx",
-      lineNumber: 508,
+      lineNumber: 505,
       columnNumber: 15
     }, this),
     actionData?.error && /* @__PURE__ */ (0, import_jsx_dev_runtime2.jsxDEV)("div", { className: "text-red-500 mt-4 p-2 bg-red-100 rounded", children: actionData.error }, void 0, false, {
       fileName: "app/routes/_index.tsx",
-      lineNumber: 520,
+      lineNumber: 517,
       columnNumber: 29
     }, this)
   ] }, void 0, true, {
     fileName: "app/routes/_index.tsx",
-    lineNumber: 308,
+    lineNumber: 309,
     columnNumber: 10
   }, this);
 }
@@ -1152,4 +1137,4 @@ window.$RefreshSig$ = prevRefreshSig;
 export {
   Index as default
 };
-//# sourceMappingURL=/build/routes/_index-OVVI2W3J.js.map
+//# sourceMappingURL=/build/routes/_index-V5BRQOWU.js.map

@@ -1,21 +1,22 @@
+import { json } from "@remix-run/node";
 import { db } from "~/db.server";
 import { Expense, JuntaExpense } from "~/types";
 
-export async function addLocalExpense(userId: string, data: { description: string, amount: number, paidBy: string, splitAmong: string }): Promise<Expense> {
-  const { description, amount, paidBy, splitAmong } = data;
+export async function addLocalExpense(userId: string, expenseData: { description: string; amount: number; paidBy: string; splitAmong: string }) {
+  try {
+    const expense = await db.expense.create({
+      data: {
+        ...expenseData,
+        userId,
+        isLocal: true
+      }
+    });
 
-  const newExpense = await db.expense.create({
-    data: {
-      description,
-      amount,
-      paidBy,
-      splitAmong,
-      isLocal: true,
-      userId
-    }
-  });
-
-  return newExpense as Expense;
+    return json({ success: true, expense });
+  } catch (error) {
+    console.error("Error adding local expense:", error);
+    return json({ success: false, error: "Failed to add local expense" }, { status: 500 });
+  }
 }
 
 export async function addJuntaExpense(userId: string, data: { juntaId: string, description: string, amount: number, splitAmong: string }): Promise<JuntaExpense> {
@@ -35,9 +36,22 @@ export async function addJuntaExpense(userId: string, data: { juntaId: string, d
 }
 
 export async function deleteExpense(expenseId: string) {
-  await db.expense.delete({
-    where: { id: expenseId }
-  });
+  try {
+    // Primero, intentamos eliminar un gasto local
+    const deletedLocalExpense = await db.expense.delete({
+      where: { id: expenseId },
+    }).catch(() => null);
 
-  return { success: true };
+    // Si no se encontró un gasto local, intentamos eliminar un gasto de junta
+    if (!deletedLocalExpense) {
+      await db.juntaExpense.delete({
+        where: { id: expenseId },
+      });
+    }
+
+    return json({ success: true });
+  } catch (error) {
+    console.error("Error deleting expense:", error);
+    return json({ success: false, error: "Failed to delete expense" }, { status: 500 });
+  }
 }

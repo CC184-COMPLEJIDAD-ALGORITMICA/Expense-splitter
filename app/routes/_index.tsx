@@ -12,10 +12,11 @@ import { respondToInvitation, getInvitations } from "~/utils/invitations";
 import { NotificationInbox } from "~/components/NotificationInbox";
 
 type ActionData = {
-  junta?: Junta;
+  success: boolean;
   error?: string;
-  success?: boolean;
-  message?: string;
+  expense?: Expense;
+  deletedExpenseId?: string;
+  junta?: Junta;
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -95,8 +96,8 @@ export const action: ActionFunction = async ({ request }) => {
     case "respondToInvitation": {
       const invitationId = form.get("invitationId") as string;
       const accept = form.get("accept") === "true";
-      await respondToInvitation(invitationId, accept);
-      return json({ success: true });
+      const result = await respondToInvitation(invitationId, accept);
+      return json(result);
     }
     case "logout":
       return await logout(request);
@@ -156,6 +157,13 @@ export default function Index() {
     handleCalculateSplits();
   }, [selectedJunta, localExpenses, handleCalculateSplits]);
 
+  const handleInvitationResponse = (invitationId: string, accept: boolean) => {
+    fetcher.submit(
+      { action: "respondToInvitation", invitationId, accept: accept.toString() },
+      { method: "post" }
+    );
+  };
+
   const handleInviteUser = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -167,91 +175,84 @@ export default function Index() {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
-    
-    let splitAmong = formData.get("splitAmong") as string;
-    if (splitAmongAll && selectedJunta) {
-      splitAmong = selectedJunta.members.map(member => member.username).join(',');
-    }
-    
-    if (!splitAmong) {
-      alert(t.pleaseSpecifySplitAmong);
-      return;
-    }
+    const action = formData.get("action") as string;
 
-    formData.set("splitAmong", splitAmong);
+    if (action === "addLocalExpense") {
+      fetcher.submit(formData, { method: "post" });
+    } else if (action === "addJuntaExpense") {
+      let splitAmong = formData.get("splitAmong") as string;
+      if (splitAmongAll && selectedJunta) {
+        splitAmong = selectedJunta.members.map(member => member.username).join(',');
+      }
+      
+      if (!splitAmong) {
+        alert(t.pleaseSpecifySplitAmong);
+        return;
+      }
 
-    if (selectedJunta) {
-      formData.set("action", "addJuntaExpense");
-      formData.set("juntaId", selectedJunta.id);
-    } else {
-      formData.set("action", "addLocalExpense");
+      formData.set("splitAmong", splitAmong);
+      formData.set("juntaId", selectedJunta!.id);
+      fetcher.submit(formData, { method: "post" });
     }
-
-    fetcher.submit(formData, { method: "post" });
 
     form.reset();
   };
-
-  const handleInvitationResponse = (invitationId: string, accept: boolean) => {
-    fetcher.submit(
-      { action: "respondToInvitation", invitationId, accept: accept.toString() },
-      { method: "post" }
-    );
-
-    setInvitations((prev: Invitation[]) => prev.filter((inv: Invitation) => inv.id !== invitationId));
-    if (accept) {
-      const acceptedInvitation = invitations.find((inv: Invitation) => inv.id === invitationId);
-      if (acceptedInvitation && acceptedInvitation.junta) {
-        setJuntas((prev: Junta[]) => [...prev, {
-          id: acceptedInvitation.junta.id,
-          name: acceptedInvitation.junta.name,
-          ownerId: acceptedInvitation.inviter.id,
-          members: [acceptedInvitation.inviter],
-          expenses: []
-        }]);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (fetcher.data) {
-      if ('success' in fetcher.data) {
-        if (fetcher.data.success) {
-          alert(fetcher.data.message || "Invitation sent successfully");
-        } else {
-          alert(fetcher.data.message || "Failed to invite user");
-        }
-      }
-    }
-  }, [fetcher.data]);
-
-  useEffect(() => {
-    if (actionData?.junta) {
-      setSelectedJunta(convertDates(actionData.junta));
-    }
-  }, [actionData]);
 
   const handleDeleteExpense = (expenseId: string) => {
     fetcher.submit(
       { action: "deleteExpense", expenseId },
       { method: "post" }
     );
-
-    // Update local state
-    if (selectedJunta) {
-      setSelectedJunta(prevJunta => {
-        if (prevJunta) {
-          return {
-            ...prevJunta,
-            expenses: prevJunta.expenses.filter(expense => expense.id !== expenseId)
-          };
-        }
-        return prevJunta;
-      });
-    } else {
-      setLocalExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== expenseId));
-    }
   };
+
+  useEffect(() => {
+    if (fetcher.data) {
+      if (fetcher.data.success) {
+        if ('expense' in fetcher.data && fetcher.data.expense) {
+          const newExpense: Expense = {
+            ...fetcher.data.expense,
+            createdAt: new Date(fetcher.data.expense.createdAt)
+          };
+          setLocalExpenses(prevExpenses => [...prevExpenses, newExpense]);
+        } else if ('deletedExpenseId' in fetcher.data && fetcher.data.deletedExpenseId) {
+          const deletedId = fetcher.data.deletedExpenseId;
+          if (selectedJunta) {
+            setSelectedJunta(prevJunta => {
+              if (prevJunta) {
+                return {
+                  ...prevJunta,
+                  expenses: prevJunta.expenses.filter(expense => expense.id !== deletedId)
+                };
+              }
+              return null;
+            });
+          } else {
+            setLocalExpenses(prevExpenses => 
+              prevExpenses.filter(expense => expense.id !== deletedId)
+            );
+          }
+        } else if ('junta' in fetcher.data && fetcher.data.junta) {
+          const newJunta: Junta = {
+            ...fetcher.data.junta,
+            expenses: fetcher.data.junta.expenses.map(expense => ({
+              ...expense,
+              createdAt: new Date(expense.createdAt)
+            }))
+          };
+          setJuntas(prevJuntas => [...prevJuntas, newJunta]);
+        }
+      } else if ('error' in fetcher.data && fetcher.data.error) {
+        console.error("Error:", fetcher.data.error);
+        // Aquí puedes manejar el error, por ejemplo, mostrando un mensaje al usuario
+      }
+    }
+  }, [fetcher.data, selectedJunta]);
+
+  useEffect(() => {
+    if (actionData?.junta) {
+      setSelectedJunta(convertDates(actionData.junta));
+    }
+  }, [actionData]);
 
   return (
     <div className="container mx-auto p-4 bg-gray-100 min-h-screen">
@@ -523,16 +524,15 @@ export default function Index() {
             </Form>
 
             <ul className="space-y-2">
-              {Array.isArray(localExpenses) && localExpenses.map((expense: Expense) => (
+              {localExpenses.map((expense: Expense) => (
                 <li key={expense.id} className="flex justify-between items-center bg-gray-100 p-2 rounded">
-                  <span>{expense.description} - {expense.amount}</span>
-                  <Form method="post">
-                    <input type="hidden" name="action" value="deleteExpense" />
-                    <input type="hidden" name="expenseId" value={expense.id} />
-                    <button type="submit" className="text-red-500 hover:text-red-700 transition">
-                      {t.deleteExpense}
-                    </button>
-                  </Form>
+                  <span>{expense.description} - {expense.amount.toFixed(2)}</span>
+                  <button
+                    onClick={() => handleDeleteExpense(expense.id)}
+                    className="text-red-500 hover:text-red-700 transition"
+                  >
+                    {t.deleteExpense}
+                  </button>
                 </li>
               ))}
             </ul>
@@ -565,7 +565,11 @@ export default function Index() {
             {t.notifications}
           </button>
           {showNotifications && user.id && (
-            <NotificationInbox userId={user.id} initialInvitations={invitations} onInvitationResponse={handleInvitationResponse} />
+            <NotificationInbox 
+              userId={user.id} 
+              initialInvitations={invitations} 
+              onInvitationResponse={handleInvitationResponse} 
+            />
           )}
         </>
       ) : (
