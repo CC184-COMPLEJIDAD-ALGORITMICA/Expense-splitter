@@ -1,0 +1,67 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["selectRelationCount"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  username     String   @unique
+  passwordHash String
+  juntas       Junta[]  @relation("JuntaMembers")
+  ownedJuntas  Junta[]  @relation("JuntaOwner")
+  expenses     Expense[]
+  receivedInvitations Invitation[] @relation("InvitedUser")
+  sentInvitations     Invitation[] @relation("Inviter")
+}
+
+model Junta {
+  id        String    @id @default(uuid())
+  name      String
+  ownerId   String
+  owner     User      @relation("JuntaOwner", fields: [ownerId], references: [id])
+  members   User[]    @relation("JuntaMembers")
+  expenses  JuntaExpense[]
+  invitations Invitation[]
+}
+
+model JuntaExpense {
+  id          String   @id @default(uuid())
+  description String
+  amount      Float
+  paidBy      String
+  splitAmong  String
+  juntaId     String
+  junta       Junta    @relation(fields: [juntaId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  description String
+  amount      Float
+  paidBy      String
+  splitAmong  String
+  isLocal     Boolean  @default(true)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Invitation {
+  id             String   @id @default(uuid())
+  junta          Junta    @relation(fields: [juntaId], references: [id])
+  juntaId        String
+  invitedUser    User     @relation("InvitedUser", fields: [invitedUserId], references: [id])
+  invitedUserId  String
+  inviter        User     @relation("Inviter", fields: [inviterId], references: [id])
+  inviterId      String
+  status         String   // "PENDING", "ACCEPTED", "REJECTED"
+  createdAt      DateTime @default(now())
+}
