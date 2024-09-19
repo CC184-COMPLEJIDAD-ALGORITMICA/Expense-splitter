@@ -53,7 +53,9 @@ export type ActionData =
   | { success: true; expense: Omit<Expense, 'createdAt'> & { createdAt: string } }
   | { success: true; deletedExpenseId: string }
   | { success: true; junta: Omit<Junta, 'expenses'> & { expenses: (Omit<JuntaExpense, 'createdAt'> & { createdAt: string })[] } }
-  | { success: false; error: string };
+  | { success: true; message: string; juntaId?: string }
+  | { success: false; error: string }
+  | { success: false; message: string };  // Añade esta línea
 
 export type AnyExpense = Expense | JuntaExpense;
 

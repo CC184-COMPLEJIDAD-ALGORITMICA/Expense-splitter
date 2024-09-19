@@ -100,29 +100,59 @@ export async function getInvitations(userId: string): Promise<Invitation[]> {
 export async function respondToInvitation(invitationId: string, accept: boolean) {
   try {
     console.log("Responding to invitation:", { invitationId, accept });
-    if (accept) {
-      const invitation = await db.invitation.update({
-        where: { id: invitationId },
-        data: { status: "ACCEPTED" },
-        include: { junta: true, invitedUser: true }
-      });
+    
+    const invitation = await db.invitation.findUnique({
+      where: { id: invitationId },
+      include: { junta: { include: { members: true } }, invitedUser: true }
+    });
 
-      await db.junta.update({
-        where: { id: invitation.juntaId },
-        data: { members: { connect: { id: invitation.invitedUserId } } }
+    if (!invitation) {
+      return { success: false, message: "Invitation not found" };
+    }
+
+    if (invitation.status !== "PENDING") {
+      return { success: false, message: "This invitation has already been processed" };
+    }
+
+    const isAlreadyMember = invitation.junta.members.some(member => member.id === invitation.invitedUserId);
+    if (isAlreadyMember) {
+      await db.invitation.delete({ where: { id: invitationId } });
+      return { success: true, message: "You are already a member of this junta" };
+    }
+
+    if (accept) {
+      const result = await db.$transaction(async (tx) => {
+        await tx.invitation.update({
+          where: { id: invitationId },
+          data: { status: "ACCEPTED" }
+        });
+        
+        const updatedJunta = await tx.junta.update({
+          where: { id: invitation.juntaId },
+          data: { members: { connect: { id: invitation.invitedUserId } } },
+          include: { members: true, expenses: true }
+        });
+        
+        return updatedJunta;
       });
 
       console.log("Invitation accepted and user added to junta");
+      return { 
+        success: true, 
+        message: "Invitation accepted", 
+        juntaId: invitation.juntaId,
+        junta: result
+      };
     } else {
-      // Eliminar la invitación en lugar de marcarla como rechazada
-      await db.invitation.delete({
-        where: { id: invitationId }
+      await db.invitation.update({
+        where: { id: invitationId },
+        data: { status: "REJECTED" }
       });
-      console.log("Invitation rejected and deleted");
+      console.log("Invitation rejected");
+      return { success: true, message: "Invitation rejected" };
     }
-    return { success: true, message: accept ? "Invitation accepted" : "Invitation rejected" };
   } catch (error) {
     console.error("Error responding to invitation:", error);
-    return { success: false, message: "Failed to respond to invitation" };
+    return { success: false, message: "Failed to respond to invitation. Please try again." };
   }
 }

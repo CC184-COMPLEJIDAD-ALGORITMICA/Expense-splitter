@@ -139,7 +139,7 @@ import {
 } from "@remix-run/react";
 
 // app/styles/tailwind.css
-var tailwind_default = "/build/_assets/tailwind-437ZUKAG.css";
+var tailwind_default = "/build/_assets/tailwind-GDL2JN43.css";
 
 // app/auth.server.ts
 import { createCookieSessionStorage, redirect } from "@remix-run/node";
@@ -516,7 +516,7 @@ __export(index_exports, {
 });
 import { json as json5 } from "@remix-run/node";
 import { useLoaderData as useLoaderData3, useActionData as useActionData2, Form as Form2, useFetcher, useSubmit } from "@remix-run/react";
-import { useState as useState2, useEffect, useCallback } from "react";
+import { useState as useState2, useEffect as useEffect2, useCallback } from "react";
 
 // app/utils/floydWarshall.ts
 function floydWarshall(initialSplits) {
@@ -670,7 +670,9 @@ var translations = {
     equalizeMoneyButton: "Igualar Dinero",
     calculateDivisionsButton: "Calcular Divisiones",
     generalSplitsEqual: "Divisiones Generales (Igualadas)",
-    generalSplitsIndividual: "Divisiones Generales (Basadas en Gastos Individuales)"
+    generalSplitsIndividual: "Divisiones Generales (Basadas en Gastos Individuales)",
+    invitationAccepted: "Invitaci\xF3n aceptada con \xE9xito",
+    operationFailed: "La operaci\xF3n fall\xF3 o devolvi\xF3 datos inesperados"
   },
   en: {
     title: "Expense Splitter",
@@ -733,7 +735,9 @@ var translations = {
     equalizeMoneyButton: "Equalize Money",
     calculateDivisionsButton: "Calculate Divisions",
     generalSplitsEqual: "General Splits (Equalized)",
-    generalSplitsIndividual: "General Splits (Based on Individual Expenses)"
+    generalSplitsIndividual: "General Splits (Based on Individual Expenses)",
+    invitationAccepted: "Invitation accepted successfully",
+    operationFailed: "The operation failed or returned unexpected data"
   }
 };
 
@@ -846,23 +850,39 @@ async function getInvitations(userId) {
 }
 async function respondToInvitation(invitationId, accept) {
   try {
-    if (console.log("Responding to invitation:", { invitationId, accept }), accept) {
-      let invitation = await db.invitation.update({
+    console.log("Responding to invitation:", { invitationId, accept });
+    let invitation = await db.invitation.findUnique({
+      where: { id: invitationId },
+      include: { junta: { include: { members: !0 } }, invitedUser: !0 }
+    });
+    if (!invitation)
+      return { success: !1, message: "Invitation not found" };
+    if (invitation.status !== "PENDING")
+      return { success: !1, message: "This invitation has already been processed" };
+    if (invitation.junta.members.some((member) => member.id === invitation.invitedUserId))
+      return await db.invitation.delete({ where: { id: invitationId } }), { success: !0, message: "You are already a member of this junta" };
+    if (accept) {
+      let result = await db.$transaction(async (tx) => (await tx.invitation.update({
         where: { id: invitationId },
-        data: { status: "ACCEPTED" },
-        include: { junta: !0, invitedUser: !0 }
-      });
-      await db.junta.update({
+        data: { status: "ACCEPTED" }
+      }), await tx.junta.update({
         where: { id: invitation.juntaId },
-        data: { members: { connect: { id: invitation.invitedUserId } } }
-      }), console.log("Invitation accepted and user added to junta");
+        data: { members: { connect: { id: invitation.invitedUserId } } },
+        include: { members: !0, expenses: !0 }
+      })));
+      return console.log("Invitation accepted and user added to junta"), {
+        success: !0,
+        message: "Invitation accepted",
+        juntaId: invitation.juntaId,
+        junta: result
+      };
     } else
-      await db.invitation.delete({
-        where: { id: invitationId }
-      }), console.log("Invitation rejected and deleted");
-    return { success: !0, message: accept ? "Invitation accepted" : "Invitation rejected" };
+      return await db.invitation.update({
+        where: { id: invitationId },
+        data: { status: "REJECTED" }
+      }), console.log("Invitation rejected"), { success: !0, message: "Invitation rejected" };
   } catch (error) {
-    return console.error("Error responding to invitation:", error), { success: !1, message: "Failed to respond to invitation" };
+    return console.error("Error responding to invitation:", error), { success: !1, message: "Failed to respond to invitation. Please try again." };
   }
 }
 
@@ -882,8 +902,14 @@ async function createJunta(userId, juntaName) {
         members: !0,
         expenses: !0
       }
-    });
-    return json4({ success: !0, junta });
+    }), formattedJunta = {
+      ...junta,
+      expenses: junta.expenses.map((expense) => ({
+        ...expense,
+        createdAt: expense.createdAt.toISOString()
+      }))
+    };
+    return json4({ success: !0, junta: formattedJunta });
   } catch (error) {
     return console.error("Error creating junta:", error), json4({ success: !1, error: "Failed to create junta" }, { status: 500 });
   }
@@ -892,7 +918,7 @@ async function clearJunta(juntaId) {
   try {
     return await db.juntaExpense.deleteMany({
       where: { juntaId }
-    }), json4({ success: !0 });
+    }), json4({ success: !0, message: "Junta cleared successfully" });
   } catch (error) {
     return console.error("Error clearing junta:", error), json4({ success: !1, error: "Failed to clear junta" }, { status: 500 });
   }
@@ -905,7 +931,7 @@ async function inviteToJunta(juntaId, invitedUsername, inviterId) {
     let result = await inviteUserToJunta(juntaId, invitedUser.id, inviterId);
     return json4({ success: !0, message: "Invitation sent successfully" });
   } catch (error) {
-    return console.error("Error inviting user:", error), json4({ success: !1, message: "An error occurred while sending the invitation" });
+    return console.error("Error inviting user:", error), json4({ success: !1, error: "An error occurred while sending the invitation" });
   }
 }
 
@@ -917,47 +943,124 @@ function NotificationInbox({
   initialInvitations,
   onInvitationResponse
 }) {
-  let [invitations, setInvitations] = useState(initialInvitations), handleInvitationResponse = (invitationId, accept) => {
-    onInvitationResponse(invitationId, accept), setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
+  let [invitations, setInvitations] = useState(initialInvitations), [responseMessages, setResponseMessages] = useState({}), [isProcessing, setIsProcessing] = useState({}), handleInvitationResponse = async (invitationId, accept) => {
+    if (!isProcessing[invitationId]) {
+      setIsProcessing((prev) => ({ ...prev, [invitationId]: !0 }));
+      try {
+        let result = await onInvitationResponse(invitationId, accept);
+        setResponseMessages((prev) => ({ ...prev, [invitationId]: result.message })), result.success && setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId)), setTimeout(() => {
+          setResponseMessages((prev) => {
+            let newMessages = { ...prev };
+            return delete newMessages[invitationId], newMessages;
+          });
+        }, 5e3);
+      } catch (error) {
+        console.error("Error processing invitation response:", error), setResponseMessages((prev) => ({ ...prev, [invitationId]: "An error occurred. Please try again. (Maybe just need to reload the page and look for your groups)" }));
+      } finally {
+        setIsProcessing((prev) => ({ ...prev, [invitationId]: !1 }));
+      }
+    }
   };
-  return invitations.length === 0 ? /* @__PURE__ */ jsxDEV5("p", { children: "No pending invitations" }, void 0, !1, {
+  return invitations.length === 0 && Object.keys(responseMessages).length === 0 ? /* @__PURE__ */ jsxDEV5("p", { className: "text-gray-500 italic", children: "No pending invitations. Try refreshing the page to check for new invitations." }, void 0, !1, {
     fileName: "app/components/NotificationInbox.tsx",
-    lineNumber: 21,
-    columnNumber: 40
-  }, this) : /* @__PURE__ */ jsxDEV5("div", { children: [
-    /* @__PURE__ */ jsxDEV5("h2", { children: "Invitations" }, void 0, !1, {
+    lineNumber: 47,
+    columnNumber: 7
+  }, this) : /* @__PURE__ */ jsxDEV5("div", { className: "space-y-4", children: [
+    /* @__PURE__ */ jsxDEV5("h2", { className: "text-xl font-semibold text-blue-600", children: "Invitations" }, void 0, !1, {
       fileName: "app/components/NotificationInbox.tsx",
-      lineNumber: 25,
+      lineNumber: 55,
       columnNumber: 7
     }, this),
-    invitations.map((invitation) => /* @__PURE__ */ jsxDEV5("div", { className: "mb-4 p-4 border rounded", children: [
-      /* @__PURE__ */ jsxDEV5("p", { children: [
-        invitation.inviter.username,
-        " invited you to ",
-        invitation.junta.name
+    invitations.map((invitation) => /* @__PURE__ */ jsxDEV5("div", { className: "bg-white shadow-md rounded-lg p-4 border border-gray-200", children: [
+      /* @__PURE__ */ jsxDEV5("p", { className: "text-lg mb-2", children: [
+        /* @__PURE__ */ jsxDEV5("span", { className: "font-semibold text-blue-500", children: invitation.inviter.username }, void 0, !1, {
+          fileName: "app/components/NotificationInbox.tsx",
+          lineNumber: 59,
+          columnNumber: 13
+        }, this),
+        " invited you to join",
+        /* @__PURE__ */ jsxDEV5("span", { className: "font-semibold text-green-500", children: [
+          " ",
+          invitation.junta.name
+        ] }, void 0, !0, {
+          fileName: "app/components/NotificationInbox.tsx",
+          lineNumber: 60,
+          columnNumber: 13
+        }, this)
       ] }, void 0, !0, {
         fileName: "app/components/NotificationInbox.tsx",
-        lineNumber: 28,
+        lineNumber: 58,
         columnNumber: 11
       }, this),
-      /* @__PURE__ */ jsxDEV5("button", { onClick: () => handleInvitationResponse(invitation.id, !0), children: "Accept" }, void 0, !1, {
+      /* @__PURE__ */ jsxDEV5("div", { className: "flex space-x-2 mt-2", children: [
+        /* @__PURE__ */ jsxDEV5(
+          "button",
+          {
+            onClick: () => handleInvitationResponse(invitation.id, !0),
+            className: `bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition ${isProcessing[invitation.id] ? "opacity-50 cursor-not-allowed" : ""}`,
+            disabled: isProcessing[invitation.id],
+            children: isProcessing[invitation.id] ? "Processing..." : "Accept"
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/components/NotificationInbox.tsx",
+            lineNumber: 63,
+            columnNumber: 13
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV5(
+          "button",
+          {
+            onClick: () => handleInvitationResponse(invitation.id, !1),
+            className: `bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition ${isProcessing[invitation.id] ? "opacity-50 cursor-not-allowed" : ""}`,
+            disabled: isProcessing[invitation.id],
+            children: isProcessing[invitation.id] ? "Processing..." : "Reject"
+          },
+          void 0,
+          !1,
+          {
+            fileName: "app/components/NotificationInbox.tsx",
+            lineNumber: 70,
+            columnNumber: 13
+          },
+          this
+        )
+      ] }, void 0, !0, {
         fileName: "app/components/NotificationInbox.tsx",
-        lineNumber: 29,
+        lineNumber: 62,
         columnNumber: 11
       }, this),
-      /* @__PURE__ */ jsxDEV5("button", { onClick: () => handleInvitationResponse(invitation.id, !1), children: "Reject" }, void 0, !1, {
+      responseMessages[invitation.id] && /* @__PURE__ */ jsxDEV5("p", { className: `mt-2 text-sm ${isProcessing[invitation.id] ? "text-yellow-600" : "text-green-600"}`, children: responseMessages[invitation.id] }, void 0, !1, {
         fileName: "app/components/NotificationInbox.tsx",
-        lineNumber: 30,
-        columnNumber: 11
+        lineNumber: 79,
+        columnNumber: 13
       }, this)
     ] }, invitation.id, !0, {
       fileName: "app/components/NotificationInbox.tsx",
-      lineNumber: 27,
+      lineNumber: 57,
+      columnNumber: 9
+    }, this)),
+    Object.entries(responseMessages).map(([invitationId, message]) => /* @__PURE__ */ jsxDEV5("div", { className: "bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4", role: "alert", children: [
+      /* @__PURE__ */ jsxDEV5("p", { className: "font-bold", children: "Response:" }, void 0, !1, {
+        fileName: "app/components/NotificationInbox.tsx",
+        lineNumber: 87,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV5("p", { children: message }, void 0, !1, {
+        fileName: "app/components/NotificationInbox.tsx",
+        lineNumber: 88,
+        columnNumber: 11
+      }, this)
+    ] }, invitationId, !0, {
+      fileName: "app/components/NotificationInbox.tsx",
+      lineNumber: 86,
       columnNumber: 9
     }, this))
   ] }, void 0, !0, {
     fileName: "app/components/NotificationInbox.tsx",
-    lineNumber: 24,
+    lineNumber: 54,
     columnNumber: 5
   }, this);
 }
@@ -1011,6 +1114,13 @@ var loader4 = async ({ request }) => {
     }
     case "respondToInvitation": {
       let invitationId = form.get("invitationId"), accept = form.get("accept") === "true", result = await respondToInvitation(invitationId, accept);
+      if (result.success && accept) {
+        let updatedJunta = await db.junta.findUnique({
+          where: { id: result.juntaId },
+          include: { members: !0, expenses: !0 }
+        });
+        return json5({ ...result, junta: updatedJunta });
+      }
       return json5(result);
     }
     case "logout":
@@ -1040,14 +1150,34 @@ function Index() {
       setSplits(calculatedSplits);
     }
   }, [selectedJunta, localExpenses, user, splitType]);
-  useEffect(() => {
+  useEffect2(() => {
     handleCalculateSplits();
   }, [selectedJunta, localExpenses, handleCalculateSplits]);
-  let handleInvitationResponse = (invitationId, accept) => {
-    fetcher.submit(
-      { action: "respondToInvitation", invitationId, accept: accept.toString() },
-      { method: "post" }
-    );
+  let updateJuntas = (newJunta) => {
+    setJuntas((prevJuntas) => {
+      let index = prevJuntas.findIndex((j) => j.id === newJunta.id);
+      if (index !== -1) {
+        let updatedJuntas = [...prevJuntas];
+        return updatedJuntas[index] = convertDates(newJunta), updatedJuntas;
+      } else
+        return [...prevJuntas, convertDates(newJunta)];
+    });
+  }, handleInvitationResponse = async (invitationId, accept) => {
+    let formData = new FormData();
+    formData.append("action", "respondToInvitation"), formData.append("invitationId", invitationId), formData.append("accept", accept.toString()), fetcher.submit(formData, { method: "post" });
+    let [fetcherCompleted, setFetcherCompleted] = useState2(!1);
+    for (useEffect2(() => {
+      fetcher.state === "idle" && fetcher.data && setFetcherCompleted(!0);
+    }, [fetcher.state, fetcher.data]); !fetcherCompleted; )
+      await new Promise((resolve3) => setTimeout(resolve3, 100));
+    return fetcher.data && "success" in fetcher.data ? (fetcher.data.success && "junta" in fetcher.data && fetcher.data.junta && updateJuntas(fetcher.data.junta), {
+      success: fetcher.data.success,
+      message: fetcher.data.message || "",
+      junta: fetcher.data.junta
+    }) : {
+      success: !1,
+      message: "An error occurred while processing the invitation"
+    };
   }, handleInviteUser = async (event) => {
     event.preventDefault();
     let form = event.currentTarget, formData = new FormData(form);
@@ -1072,9 +1202,9 @@ function Index() {
       { method: "post" }
     );
   };
-  return useEffect(() => {
-    if (fetcher.data)
-      if (fetcher.data.success) {
+  return useEffect2(() => {
+    if (fetcher.data && fetcher.state === "idle")
+      if (fetcher.data.success)
         if ("expense" in fetcher.data && fetcher.data.expense) {
           let newExpense = {
             ...fetcher.data.expense,
@@ -1089,19 +1219,11 @@ function Index() {
           } : null) : setLocalExpenses(
             (prevExpenses) => prevExpenses.filter((expense) => expense.id !== deletedId)
           );
-        } else if ("junta" in fetcher.data && fetcher.data.junta) {
-          let newJunta = {
-            ...fetcher.data.junta,
-            expenses: fetcher.data.junta.expenses.map((expense) => ({
-              ...expense,
-              createdAt: new Date(expense.createdAt)
-            }))
-          };
-          setJuntas((prevJuntas) => [...prevJuntas, newJunta]);
-        }
-      } else
+        } else
+          "junta" in fetcher.data && fetcher.data.junta && updateJuntas(fetcher.data.junta);
+      else
         "error" in fetcher.data && fetcher.data.error && console.error("Error:", fetcher.data.error);
-  }, [fetcher.data, selectedJunta]), useEffect(() => {
+  }, [fetcher.data, fetcher.state, selectedJunta]), useEffect2(() => {
     actionData?.junta && setSelectedJunta(convertDates(actionData.junta));
   }, [actionData]), /* @__PURE__ */ jsxDEV6("div", { className: "container mx-auto p-4 bg-gray-100 min-h-screen", children: [
     user ? /* @__PURE__ */ jsxDEV6(Fragment2, { children: [
@@ -1113,50 +1235,72 @@ function Index() {
           "!"
         ] }, void 0, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 262,
+          lineNumber: 311,
           columnNumber: 13
         }, this),
-        /* @__PURE__ */ jsxDEV6(Form2, { method: "post", children: [
-          /* @__PURE__ */ jsxDEV6("input", { type: "hidden", name: "action", value: "logout" }, void 0, !1, {
+        /* @__PURE__ */ jsxDEV6("div", { className: "flex items-center", children: [
+          /* @__PURE__ */ jsxDEV6(
+            "button",
+            {
+              onClick: () => setLanguage((lang) => lang === "es" ? "en" : "es"),
+              className: "bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition mr-2",
+              children: language === "es" ? "EN" : "ES"
+            },
+            void 0,
+            !1,
+            {
+              fileName: "app/routes/_index.tsx",
+              lineNumber: 313,
+              columnNumber: 15
+            },
+            this
+          ),
+          /* @__PURE__ */ jsxDEV6(Form2, { method: "post", children: [
+            /* @__PURE__ */ jsxDEV6("input", { type: "hidden", name: "action", value: "logout" }, void 0, !1, {
+              fileName: "app/routes/_index.tsx",
+              lineNumber: 320,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV6("button", { type: "submit", className: "bg-red-500 text-white p-2 rounded hover:bg-red-600 transition", children: t.logout }, void 0, !1, {
+              fileName: "app/routes/_index.tsx",
+              lineNumber: 321,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, !0, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 264,
-            columnNumber: 15
-          }, this),
-          /* @__PURE__ */ jsxDEV6("button", { type: "submit", className: "bg-red-500 text-white p-2 rounded hover:bg-red-600 transition", children: t.logout }, void 0, !1, {
-            fileName: "app/routes/_index.tsx",
-            lineNumber: 265,
+            lineNumber: 319,
             columnNumber: 15
           }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 263,
+          lineNumber: 312,
           columnNumber: 13
         }, this)
       ] }, void 0, !0, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 261,
+        lineNumber: 310,
         columnNumber: 11
       }, this),
       showTutorial && /* @__PURE__ */ jsxDEV6("div", { className: "bg-white p-6 rounded-lg shadow-md mb-6", children: [
         /* @__PURE__ */ jsxDEV6("h2", { className: "text-2xl font-bold mb-4", children: t.tutorial.welcome }, void 0, !1, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 273,
+          lineNumber: 330,
           columnNumber: 15
         }, this),
         t.tutorial.algorithms.map((algo, index) => /* @__PURE__ */ jsxDEV6("div", { className: "mb-4", children: [
           /* @__PURE__ */ jsxDEV6("h3", { className: "text-xl font-semibold", children: algo.name }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 276,
+            lineNumber: 333,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDEV6("p", { children: algo.description }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 277,
+            lineNumber: 334,
             columnNumber: 19
           }, this)
         ] }, index, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 275,
+          lineNumber: 332,
           columnNumber: 17
         }, this)),
         /* @__PURE__ */ jsxDEV6(
@@ -1170,26 +1314,26 @@ function Index() {
           !1,
           {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 280,
+            lineNumber: 337,
             columnNumber: 15
           },
           this
         )
       ] }, void 0, !0, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 272,
+        lineNumber: 329,
         columnNumber: 13
       }, this),
       /* @__PURE__ */ jsxDEV6("div", { className: "mb-6", children: [
         /* @__PURE__ */ jsxDEV6("h2", { className: "text-2xl font-semibold mb-4 text-blue-800", children: t.createJunta }, void 0, !1, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 290,
+          lineNumber: 347,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDEV6(Form2, { method: "post", className: "flex space-x-2", children: [
           /* @__PURE__ */ jsxDEV6("input", { type: "hidden", name: "action", value: "createJunta" }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 292,
+            lineNumber: 349,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDEV6(
@@ -1205,30 +1349,30 @@ function Index() {
             !1,
             {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 293,
+              lineNumber: 350,
               columnNumber: 15
             },
             this
           ),
           /* @__PURE__ */ jsxDEV6("button", { type: "submit", className: "bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition", children: t.create }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 300,
+            lineNumber: 357,
             columnNumber: 15
           }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 291,
+          lineNumber: 348,
           columnNumber: 13
         }, this)
       ] }, void 0, !0, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 289,
+        lineNumber: 346,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ jsxDEV6("div", { className: "mb-6", children: [
         /* @__PURE__ */ jsxDEV6("h2", { className: "text-2xl font-semibold mb-4 text-blue-800", children: t.yourJuntas }, void 0, !1, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 307,
+          lineNumber: 364,
           columnNumber: 13
         }, this),
         Array.isArray(juntas) && juntas.length > 0 ? /* @__PURE__ */ jsxDEV6(
@@ -1242,12 +1386,12 @@ function Index() {
             children: [
               /* @__PURE__ */ jsxDEV6("option", { value: "", children: t.selectJunta }, void 0, !1, {
                 fileName: "app/routes/_index.tsx",
-                lineNumber: 316,
+                lineNumber: 373,
                 columnNumber: 17
               }, this),
               juntas.map((j) => /* @__PURE__ */ jsxDEV6("option", { value: j.id, children: j.name }, j.id, !1, {
                 fileName: "app/routes/_index.tsx",
-                lineNumber: 318,
+                lineNumber: 375,
                 columnNumber: 19
               }, this))
             ]
@@ -1256,35 +1400,35 @@ function Index() {
           !0,
           {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 309,
+            lineNumber: 366,
             columnNumber: 15
           },
           this
         ) : /* @__PURE__ */ jsxDEV6("p", { children: t.noJuntas }, void 0, !1, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 324,
+          lineNumber: 381,
           columnNumber: 15
         }, this)
       ] }, void 0, !0, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 306,
+        lineNumber: 363,
         columnNumber: 11
       }, this),
       selectedJunta && /* @__PURE__ */ jsxDEV6("div", { className: "bg-white p-6 rounded-lg shadow-md mb-6", children: [
         /* @__PURE__ */ jsxDEV6("h3", { className: "text-xl font-semibold mb-4 text-blue-700", children: selectedJunta.name }, void 0, !1, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 330,
+          lineNumber: 387,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDEV6(Form2, { method: "post", onSubmit: handleInviteUser, className: "mb-4", children: [
           /* @__PURE__ */ jsxDEV6("input", { type: "hidden", name: "action", value: "inviteToJunta" }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 333,
+            lineNumber: 390,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDEV6("input", { type: "hidden", name: "juntaId", value: selectedJunta.id }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 334,
+            lineNumber: 391,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDEV6("div", { className: "flex space-x-2", children: [
@@ -1301,35 +1445,35 @@ function Index() {
               !1,
               {
                 fileName: "app/routes/_index.tsx",
-                lineNumber: 336,
+                lineNumber: 393,
                 columnNumber: 19
               },
               this
             ),
             /* @__PURE__ */ jsxDEV6("button", { type: "submit", className: "bg-green-500 text-white p-2 rounded hover:bg-green-600 transition", children: t.invite }, void 0, !1, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 343,
+              lineNumber: 400,
               columnNumber: 19
             }, this)
           ] }, void 0, !0, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 335,
+            lineNumber: 392,
             columnNumber: 17
           }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 332,
+          lineNumber: 389,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDEV6(Form2, { method: "post", onSubmit: handleAddExpense, className: "mb-4", children: [
           /* @__PURE__ */ jsxDEV6("input", { type: "hidden", name: "action", value: "addJuntaExpense" }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 350,
+            lineNumber: 407,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDEV6("input", { type: "hidden", name: "juntaId", value: selectedJunta.id }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 351,
+            lineNumber: 408,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDEV6("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-2", children: [
@@ -1346,7 +1490,7 @@ function Index() {
               !1,
               {
                 fileName: "app/routes/_index.tsx",
-                lineNumber: 353,
+                lineNumber: 410,
                 columnNumber: 19
               },
               this
@@ -1364,7 +1508,7 @@ function Index() {
               !1,
               {
                 fileName: "app/routes/_index.tsx",
-                lineNumber: 360,
+                lineNumber: 417,
                 columnNumber: 19
               },
               this
@@ -1384,7 +1528,7 @@ function Index() {
                 !1,
                 {
                   fileName: "app/routes/_index.tsx",
-                  lineNumber: 368,
+                  lineNumber: 425,
                   columnNumber: 21
                 },
                 this
@@ -1402,7 +1546,7 @@ function Index() {
                   !1,
                   {
                     fileName: "app/routes/_index.tsx",
-                    lineNumber: 377,
+                    lineNumber: 434,
                     columnNumber: 23
                   },
                   this
@@ -1410,33 +1554,33 @@ function Index() {
                 t.splitAmongAll
               ] }, void 0, !0, {
                 fileName: "app/routes/_index.tsx",
-                lineNumber: 376,
+                lineNumber: 433,
                 columnNumber: 21
               }, this)
             ] }, void 0, !0, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 367,
+              lineNumber: 424,
               columnNumber: 19
             }, this)
           ] }, void 0, !0, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 352,
+            lineNumber: 409,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDEV6("button", { type: "submit", className: "mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition", children: t.addExpense }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 387,
+            lineNumber: 444,
             columnNumber: 17
           }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 349,
+          lineNumber: 406,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDEV6("div", { className: "mt-6", children: [
           /* @__PURE__ */ jsxDEV6("h4", { className: "text-lg font-semibold text-blue-600", children: t.juntaExpenses }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 394,
+            lineNumber: 451,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDEV6("ul", { className: "space-y-2", children: selectedJunta.expenses.map((expense) => /* @__PURE__ */ jsxDEV6("li", { className: "bg-gray-100 p-2 rounded flex justify-between items-center", children: [
@@ -1451,7 +1595,7 @@ function Index() {
               ")"
             ] }, void 0, !0, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 398,
+              lineNumber: 455,
               columnNumber: 23
             }, this),
             /* @__PURE__ */ jsxDEV6(
@@ -1465,29 +1609,29 @@ function Index() {
               !1,
               {
                 fileName: "app/routes/_index.tsx",
-                lineNumber: 402,
+                lineNumber: 459,
                 columnNumber: 23
               },
               this
             )
           ] }, expense.id, !0, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 397,
+            lineNumber: 454,
             columnNumber: 21
           }, this)) }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 395,
+            lineNumber: 452,
             columnNumber: 17
           }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 393,
+          lineNumber: 450,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDEV6("div", { className: "mt-6", children: [
           /* @__PURE__ */ jsxDEV6("h4", { className: "text-lg font-semibold text-blue-600", children: t.myExpenses }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 415,
+            lineNumber: 472,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDEV6("ul", { className: "space-y-2", children: selectedJunta.expenses.filter((e) => e.paidBy === user?.id).map((expense) => /* @__PURE__ */ jsxDEV6("li", { className: "bg-gray-100 p-2 rounded flex justify-between items-center", children: [
@@ -1497,7 +1641,7 @@ function Index() {
               expense.amount.toFixed(2)
             ] }, void 0, !0, {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 419,
+              lineNumber: 476,
               columnNumber: 23
             }, this),
             /* @__PURE__ */ jsxDEV6(
@@ -1511,23 +1655,23 @@ function Index() {
               !1,
               {
                 fileName: "app/routes/_index.tsx",
-                lineNumber: 420,
+                lineNumber: 477,
                 columnNumber: 23
               },
               this
             )
           ] }, expense.id, !0, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 418,
+            lineNumber: 475,
             columnNumber: 21
           }, this)) }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 416,
+            lineNumber: 473,
             columnNumber: 17
           }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 414,
+          lineNumber: 471,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDEV6("div", { className: "mt-4 space-x-2", children: [
@@ -1544,7 +1688,7 @@ function Index() {
             !1,
             {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 432,
+              lineNumber: 489,
               columnNumber: 17
             },
             this
@@ -1562,92 +1706,92 @@ function Index() {
             !1,
             {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 441,
+              lineNumber: 498,
               columnNumber: 17
             },
             this
           )
         ] }, void 0, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 431,
+          lineNumber: 488,
           columnNumber: 15
         }, this),
         splits.length > 0 && /* @__PURE__ */ jsxDEV6("div", { className: "mt-4", children: [
           /* @__PURE__ */ jsxDEV6("h4", { className: "text-lg font-semibold text-blue-600", children: splitType === "equal" ? t.generalSplitsEqual : t.generalSplitsIndividual }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 455,
+            lineNumber: 512,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDEV6("ul", { className: "space-y-2", children: splits.map((split, index) => /* @__PURE__ */ jsxDEV6("li", { className: "bg-gray-100 p-2 rounded", children: `${split.from} ${t.owes} ${split.to}: ${split.amount.toFixed(2)}` }, index, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 460,
+            lineNumber: 517,
             columnNumber: 23
           }, this)) }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 458,
+            lineNumber: 515,
             columnNumber: 19
           }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 454,
+          lineNumber: 511,
           columnNumber: 17
         }, this),
         splits.length > 0 && /* @__PURE__ */ jsxDEV6("div", { className: "mt-4", children: [
           /* @__PURE__ */ jsxDEV6("h4", { className: "text-lg font-semibold text-blue-600", children: t.mySplits }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 471,
+            lineNumber: 528,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDEV6("ul", { className: "space-y-2", children: splits.filter((split) => split.from === user?.username || split.to === user?.username).map((split, index) => /* @__PURE__ */ jsxDEV6("li", { className: "bg-gray-100 p-2 rounded", children: split.from === user?.username ? `${t.youOwe} ${split.to}: ${split.amount.toFixed(2)}` : `${split.from} ${t.owesYou}: ${split.amount.toFixed(2)}` }, index, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 474,
+            lineNumber: 531,
             columnNumber: 23
           }, this)) }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 472,
+            lineNumber: 529,
             columnNumber: 19
           }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 470,
+          lineNumber: 527,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDEV6(Form2, { method: "post", className: "mt-4", children: [
           /* @__PURE__ */ jsxDEV6("input", { type: "hidden", name: "action", value: "clearJunta" }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 485,
+            lineNumber: 542,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDEV6("input", { type: "hidden", name: "juntaId", value: selectedJunta.id }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 486,
+            lineNumber: 543,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDEV6("button", { type: "submit", className: "bg-red-500 text-white p-2 rounded hover:bg-red-600 transition", children: t.clearJunta }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 487,
+            lineNumber: 544,
             columnNumber: 17
           }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 484,
+          lineNumber: 541,
           columnNumber: 15
         }, this)
       ] }, void 0, !0, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 329,
+        lineNumber: 386,
         columnNumber: 13
       }, this),
       /* @__PURE__ */ jsxDEV6("div", { className: "mb-6", children: [
         /* @__PURE__ */ jsxDEV6("h2", { className: "text-2xl font-semibold mb-4 text-blue-800", children: t.localExpenses }, void 0, !1, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 495,
+          lineNumber: 552,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDEV6(Form2, { method: "post", onSubmit: handleAddExpense, className: "mb-4", children: [
           /* @__PURE__ */ jsxDEV6("input", { type: "hidden", name: "action", value: "addLocalExpense" }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 497,
+            lineNumber: 554,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDEV6("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-2", children: [
@@ -1664,7 +1808,7 @@ function Index() {
               !1,
               {
                 fileName: "app/routes/_index.tsx",
-                lineNumber: 499,
+                lineNumber: 556,
                 columnNumber: 17
               },
               this
@@ -1682,7 +1826,7 @@ function Index() {
               !1,
               {
                 fileName: "app/routes/_index.tsx",
-                lineNumber: 506,
+                lineNumber: 563,
                 columnNumber: 17
               },
               this
@@ -1700,24 +1844,24 @@ function Index() {
               !1,
               {
                 fileName: "app/routes/_index.tsx",
-                lineNumber: 513,
+                lineNumber: 570,
                 columnNumber: 17
               },
               this
             )
           ] }, void 0, !0, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 498,
+            lineNumber: 555,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDEV6("button", { type: "submit", className: "mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition", children: t.addLocalExpense }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 521,
+            lineNumber: 578,
             columnNumber: 15
           }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 496,
+          lineNumber: 553,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDEV6("ul", { className: "space-y-2", children: localExpenses.map((expense) => /* @__PURE__ */ jsxDEV6("li", { className: "flex justify-between items-center bg-gray-100 p-2 rounded", children: [
@@ -1727,7 +1871,7 @@ function Index() {
             expense.amount.toFixed(2)
           ] }, void 0, !0, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 529,
+            lineNumber: 586,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDEV6(
@@ -1741,18 +1885,18 @@ function Index() {
             !1,
             {
               fileName: "app/routes/_index.tsx",
-              lineNumber: 530,
+              lineNumber: 587,
               columnNumber: 19
             },
             this
           )
         ] }, expense.id, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 528,
+          lineNumber: 585,
           columnNumber: 17
         }, this)) }, void 0, !1, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 526,
+          lineNumber: 583,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDEV6(
@@ -1766,7 +1910,7 @@ function Index() {
           !1,
           {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 540,
+            lineNumber: 597,
             columnNumber: 13
           },
           this
@@ -1774,26 +1918,26 @@ function Index() {
         splits.length > 0 && /* @__PURE__ */ jsxDEV6("div", { className: "mt-4", children: [
           /* @__PURE__ */ jsxDEV6("h3", { className: "text-lg font-semibold text-blue-600", children: t.splits }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 549,
+            lineNumber: 606,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDEV6("ul", { className: "space-y-2", children: splits.map((split, index) => /* @__PURE__ */ jsxDEV6("li", { className: "bg-gray-100 p-2 rounded", children: `${split.from} ${t.owes} ${split.to}: ${split.amount.toFixed(2)}` }, index, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 552,
+            lineNumber: 609,
             columnNumber: 21
           }, this)) }, void 0, !1, {
             fileName: "app/routes/_index.tsx",
-            lineNumber: 550,
+            lineNumber: 607,
             columnNumber: 17
           }, this)
         ] }, void 0, !0, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 548,
+          lineNumber: 605,
           columnNumber: 15
         }, this)
       ] }, void 0, !0, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 494,
+        lineNumber: 551,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ jsxDEV6(
@@ -1807,7 +1951,7 @@ function Index() {
         !1,
         {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 561,
+          lineNumber: 618,
           columnNumber: 11
         },
         this
@@ -1823,50 +1967,50 @@ function Index() {
         !1,
         {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 568,
+          lineNumber: 625,
           columnNumber: 13
         },
         this
       )
     ] }, void 0, !0, {
       fileName: "app/routes/_index.tsx",
-      lineNumber: 260,
+      lineNumber: 309,
       columnNumber: 9
     }, this) : /* @__PURE__ */ jsxDEV6("div", { className: "text-center", children: [
       /* @__PURE__ */ jsxDEV6("p", { className: "mb-4 text-xl", children: t.pleaseLogin }, void 0, !1, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 577,
+        lineNumber: 634,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ jsxDEV6("div", { className: "space-x-4", children: [
         /* @__PURE__ */ jsxDEV6("a", { href: "/login", className: "bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition", children: t.login }, void 0, !1, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 579,
+          lineNumber: 636,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDEV6("a", { href: "/register", className: "bg-green-500 text-white p-2 rounded hover:bg-green-600 transition", children: t.register }, void 0, !1, {
           fileName: "app/routes/_index.tsx",
-          lineNumber: 582,
+          lineNumber: 639,
           columnNumber: 13
         }, this)
       ] }, void 0, !0, {
         fileName: "app/routes/_index.tsx",
-        lineNumber: 578,
+        lineNumber: 635,
         columnNumber: 11
       }, this)
     ] }, void 0, !0, {
       fileName: "app/routes/_index.tsx",
-      lineNumber: 576,
+      lineNumber: 633,
       columnNumber: 9
     }, this),
     actionData?.error && /* @__PURE__ */ jsxDEV6("div", { className: "text-red-500 mt-4 p-2 bg-red-100 rounded", children: actionData.error }, void 0, !1, {
       fileName: "app/routes/_index.tsx",
-      lineNumber: 590,
+      lineNumber: 647,
       columnNumber: 9
     }, this)
   ] }, void 0, !0, {
     fileName: "app/routes/_index.tsx",
-    lineNumber: 258,
+    lineNumber: 307,
     columnNumber: 5
   }, this);
 }
@@ -2045,7 +2189,7 @@ function Login() {
 }
 
 // server-assets-manifest:@remix-run/dev/assets-manifest
-var assets_manifest_default = { entry: { module: "/build/entry.client-WNOF6HJJ.js", imports: ["/build/_shared/chunk-O4BRYNJ4.js", "/build/_shared/chunk-SBCI5TGH.js", "/build/_shared/chunk-KHA4OLT4.js", "/build/_shared/chunk-U4FRFQSK.js", "/build/_shared/chunk-XGOTYLZ5.js", "/build/_shared/chunk-7M6SC7J5.js", "/build/_shared/chunk-UWV35TSL.js", "/build/_shared/chunk-PNG5AS42.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-2L4M7XVG.js", imports: ["/build/_shared/chunk-G7CHZRZX.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/_index": { id: "routes/_index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/_index-V5BRQOWU.js", imports: ["/build/_shared/chunk-E7TNPIXH.js", "/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/login": { id: "routes/login", parentId: "root", path: "login", index: void 0, caseSensitive: void 0, module: "/build/routes/login-TTUKGLUY.js", imports: ["/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/logout": { id: "routes/logout", parentId: "root", path: "logout", index: void 0, caseSensitive: void 0, module: "/build/routes/logout-GGSXPJWV.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/register": { id: "routes/register", parentId: "root", path: "register", index: void 0, caseSensitive: void 0, module: "/build/routes/register-WRG62OVP.js", imports: ["/build/_shared/chunk-E7TNPIXH.js", "/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "1e91314a", hmr: { runtime: "/build/_shared\\chunk-KHA4OLT4.js", timestamp: 1726735008877 }, url: "/build/manifest-1E91314A.js" };
+var assets_manifest_default = { entry: { module: "/build/entry.client-WNOF6HJJ.js", imports: ["/build/_shared/chunk-O4BRYNJ4.js", "/build/_shared/chunk-SBCI5TGH.js", "/build/_shared/chunk-KHA4OLT4.js", "/build/_shared/chunk-U4FRFQSK.js", "/build/_shared/chunk-XGOTYLZ5.js", "/build/_shared/chunk-7M6SC7J5.js", "/build/_shared/chunk-UWV35TSL.js", "/build/_shared/chunk-PNG5AS42.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-354UQ2M5.js", imports: ["/build/_shared/chunk-G7CHZRZX.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/_index": { id: "routes/_index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/_index-BSZJ7PUT.js", imports: ["/build/_shared/chunk-E7TNPIXH.js", "/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/login": { id: "routes/login", parentId: "root", path: "login", index: void 0, caseSensitive: void 0, module: "/build/routes/login-TTUKGLUY.js", imports: ["/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/logout": { id: "routes/logout", parentId: "root", path: "logout", index: void 0, caseSensitive: void 0, module: "/build/routes/logout-GGSXPJWV.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/register": { id: "routes/register", parentId: "root", path: "register", index: void 0, caseSensitive: void 0, module: "/build/routes/register-WRG62OVP.js", imports: ["/build/_shared/chunk-E7TNPIXH.js", "/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "2e818b30", hmr: { runtime: "/build/_shared\\chunk-KHA4OLT4.js", timestamp: 1726738152966 }, url: "/build/manifest-2E818B30.js" };
 
 // server-entry-module:@remix-run/dev/server-build
 var mode = "development", assetsBuildDirectory = "public\\build", future = { v3_fetcherPersist: !1, v3_relativeSplatPath: !1, v3_throwAbortReason: !1, unstable_singleFetch: !1, unstable_lazyRouteDiscovery: !1, unstable_optimizeDeps: !1 }, publicPath = "/build/", entry = { module: entry_server_exports }, routes = {

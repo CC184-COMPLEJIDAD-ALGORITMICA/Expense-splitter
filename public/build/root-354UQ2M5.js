@@ -36,7 +36,7 @@ var require_auth = __commonJS({
 var import_node = __toESM(require_node(), 1);
 
 // app/styles/tailwind.css
-var tailwind_default = "/build/_assets/tailwind-437ZUKAG.css";
+var tailwind_default = "/build/_assets/tailwind-GDL2JN43.css";
 
 // app/root.tsx
 var import_auth = __toESM(require_auth(), 1);
@@ -224,4 +224,4 @@ export {
   links,
   meta
 };
-//# sourceMappingURL=/build/root-2L4M7XVG.js.map
+//# sourceMappingURL=/build/root-354UQ2M5.js.map

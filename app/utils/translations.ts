@@ -61,6 +61,8 @@ export const translations = {
     calculateDivisionsButton: "Calcular Divisiones",
     generalSplitsEqual: "Divisiones Generales (Igualadas)",
     generalSplitsIndividual: "Divisiones Generales (Basadas en Gastos Individuales)",
+    invitationAccepted: "Invitación aceptada con éxito",
+    operationFailed: "La operación falló o devolvió datos inesperados",
   },
   en: {
     title: "Expense Splitter",
@@ -124,5 +126,7 @@ export const translations = {
     calculateDivisionsButton: "Calculate Divisions",
     generalSplitsEqual: "General Splits (Equalized)",
     generalSplitsIndividual: "General Splits (Based on Individual Expenses)",
+    invitationAccepted: "Invitation accepted successfully",
+    operationFailed: "The operation failed or returned unexpected data",
   }
 };

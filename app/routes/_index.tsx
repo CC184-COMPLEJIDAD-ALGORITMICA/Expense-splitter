@@ -13,6 +13,7 @@ import { NotificationInbox } from "~/components/NotificationInbox";
 
 type ActionData = {
   success: boolean;
+  message: string;
   error?: string;
   expense?: Expense;
   deletedExpenseId?: string;
@@ -97,6 +98,14 @@ export const action: ActionFunction = async ({ request }) => {
       const invitationId = form.get("invitationId") as string;
       const accept = form.get("accept") === "true";
       const result = await respondToInvitation(invitationId, accept);
+      if (result.success && accept) {
+        // Obtener la junta actualizada
+        const updatedJunta = await db.junta.findUnique({
+          where: { id: result.juntaId },
+          include: { members: true, expenses: true }
+        });
+        return json({ ...result, junta: updatedJunta });
+      }
       return json(result);
     }
     case "logout":
@@ -157,11 +166,58 @@ export default function Index() {
     handleCalculateSplits();
   }, [selectedJunta, localExpenses, handleCalculateSplits]);
 
-  const handleInvitationResponse = (invitationId: string, accept: boolean) => {
-    fetcher.submit(
-      { action: "respondToInvitation", invitationId, accept: accept.toString() },
-      { method: "post" }
-    );
+  const updateJuntas = (newJunta: Junta) => {
+    setJuntas(prevJuntas => {
+      const index = prevJuntas.findIndex(j => j.id === newJunta.id);
+      if (index !== -1) {
+        // Si la junta ya existe, actualizarla
+        const updatedJuntas = [...prevJuntas];
+        updatedJuntas[index] = convertDates(newJunta);
+        return updatedJuntas;
+      } else {
+        // Si es una nueva junta, añadirla al array
+        return [...prevJuntas, convertDates(newJunta)];
+      }
+    });
+  };
+
+  const handleInvitationResponse = async (invitationId: string, accept: boolean): Promise<{ success: boolean; message: string; junta?: any }> => {
+    const formData = new FormData();
+    formData.append('action', 'respondToInvitation');
+    formData.append('invitationId', invitationId);
+    formData.append('accept', accept.toString());
+
+    fetcher.submit(formData, { method: "post" });
+
+    // We'll use a state to track when the fetcher has completed
+    const [fetcherCompleted, setFetcherCompleted] = useState(false);
+
+    useEffect(() => {
+      if (fetcher.state === 'idle' && fetcher.data) {
+        setFetcherCompleted(true);
+      }
+    }, [fetcher.state, fetcher.data]);
+
+    // Wait for the fetcher to complete
+    while (!fetcherCompleted) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    if (fetcher.data && 'success' in fetcher.data) {
+      if (fetcher.data.success && 'junta' in fetcher.data && fetcher.data.junta) {
+        updateJuntas(fetcher.data.junta as Junta);
+      }
+      return {
+        success: fetcher.data.success,
+        message: fetcher.data.message || '',
+        junta: fetcher.data.junta
+      };
+    }
+
+    return {
+      success: false,
+      message: 'An error occurred while processing the invitation'
+    };
   };
 
   const handleInviteUser = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -206,7 +262,7 @@ export default function Index() {
   };
 
   useEffect(() => {
-    if (fetcher.data) {
+    if (fetcher.data && fetcher.state === "idle") {
       if (fetcher.data.success) {
         if ('expense' in fetcher.data && fetcher.data.expense) {
           const newExpense: Expense = {
@@ -232,21 +288,14 @@ export default function Index() {
             );
           }
         } else if ('junta' in fetcher.data && fetcher.data.junta) {
-          const newJunta: Junta = {
-            ...fetcher.data.junta,
-            expenses: fetcher.data.junta.expenses.map(expense => ({
-              ...expense,
-              createdAt: new Date(expense.createdAt)
-            }))
-          };
-          setJuntas(prevJuntas => [...prevJuntas, newJunta]);
+          updateJuntas(fetcher.data.junta);
         }
       } else if ('error' in fetcher.data && fetcher.data.error) {
         console.error("Error:", fetcher.data.error);
         // Aquí puedes manejar el error, por ejemplo, mostrando un mensaje al usuario
       }
     }
-  }, [fetcher.data, selectedJunta]);
+  }, [fetcher.data, fetcher.state, selectedJunta]);
 
   useEffect(() => {
     if (actionData?.junta) {
@@ -260,12 +309,20 @@ export default function Index() {
         <>
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-blue-600">{t.welcome}, {user.username}!</h1>
-            <Form method="post">
-              <input type="hidden" name="action" value="logout" />
-              <button type="submit" className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition">
-                {t.logout}
+            <div className="flex items-center">
+              <button
+                onClick={() => setLanguage(lang => lang === 'es' ? 'en' : 'es')}
+                className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition mr-2"
+              >
+                {language === 'es' ? 'EN' : 'ES'}
               </button>
-            </Form>
+              <Form method="post">
+                <input type="hidden" name="action" value="logout" />
+                <button type="submit" className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition">
+                  {t.logout}
+                </button>
+              </Form>
+            </div>
           </div>
           
           {showTutorial && (

@@ -1,9 +1,7 @@
 import { db } from "~/db.server";
 import { inviteUserToJunta } from "~/utils/invitations";
 import { json } from "@remix-run/node";
-import { ActionData } from "../types";
-
-
+import { ActionData, Junta, JuntaExpense } from "../types";
 
 export async function createJunta(userId: string, juntaName: string) {
   try {
@@ -21,10 +19,21 @@ export async function createJunta(userId: string, juntaName: string) {
       }
     });
 
-    return json({ success: true, junta });
+    // Convertir las fechas a cadenas
+    const formattedJunta: Omit<Junta, "expenses"> & { 
+      expenses: (Omit<JuntaExpense, "createdAt"> & { createdAt: string })[] 
+    } = {
+      ...junta,
+      expenses: junta.expenses.map(expense => ({
+        ...expense,
+        createdAt: expense.createdAt.toISOString()
+      }))
+    };
+
+    return json<ActionData>({ success: true, junta: formattedJunta });
   } catch (error) {
     console.error("Error creating junta:", error);
-    return json({ success: false, error: "Failed to create junta" }, { status: 500 });
+    return json<ActionData>({ success: false, error: "Failed to create junta" }, { status: 500 });
   }
 }
 
@@ -34,10 +43,10 @@ export async function clearJunta(juntaId: string) {
       where: { juntaId }
     });
 
-    return json({ success: true });
+    return json<ActionData>({ success: true, message: "Junta cleared successfully" });
   } catch (error) {
     console.error("Error clearing junta:", error);
-    return json({ success: false, error: "Failed to clear junta" }, { status: 500 });
+    return json<ActionData>({ success: false, error: "Failed to clear junta" }, { status: 500 });
   }
 }
 
@@ -45,14 +54,14 @@ export async function inviteToJunta(juntaId: string, invitedUsername: string, in
   try {
     const invitedUser = await db.user.findUnique({ where: { username: invitedUsername } });
     if (!invitedUser) {
-      return json({ success: false, message: "User not found" } as ActionData);
+      return json<ActionData>({ success: false, message: "User not found" });
     }
 
     const result = await inviteUserToJunta(juntaId, invitedUser.id, inviterId);
-    return json({ success: true, message: "Invitation sent successfully" } as ActionData);
+    return json<ActionData>({ success: true, message: "Invitation sent successfully" });
   } catch (error) {
     console.error("Error inviting user:", error);
-    return json({ success: false, message: "An error occurred while sending the invitation" } as ActionData);
+    return json<ActionData>({ success: false, error: "An error occurred while sending the invitation" });
   }
 }
 
