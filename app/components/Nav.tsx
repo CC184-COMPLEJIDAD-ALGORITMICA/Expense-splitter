@@ -9,7 +9,15 @@ export default function Nav({ user }: { user: { username: string } | null }) {
         </Link>
         <div>
           {user ? (
-            <span className="text-white mr-4">Welcome, {user.username}!</span>
+            <>
+              <span className="text-white mr-4">Welcome, {user.username}!</span>
+              <Link to="/minimizacion-transacciones" className="text-white mr-4">
+                Optimización de Transferencias
+              </Link>
+              <Link to="/optimizacion-divisas" className="text-white mr-4">
+                Optimización de Divisas
+              </Link>
+            </>
           ) : (
             <>
               <Link to="/login" className="text-white mr-4">
