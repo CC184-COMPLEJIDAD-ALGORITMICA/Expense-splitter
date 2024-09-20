@@ -1,6 +1,6 @@
 import {
   exportToExcel
-} from "/build/_shared/chunk-VS4ZVN4Y.js";
+} from "/build/_shared/chunk-QGBU2JQV.js";
 import {
   require_node
 } from "/build/_shared/chunk-G7CHZRZX.js";
@@ -159,4 +159,4 @@ window.$RefreshSig$ = prevRefreshSig;
 export {
   MinimizacionTransacciones as default
 };
-//# sourceMappingURL=/build/routes/minimizacion-transacciones-QI4P57CO.js.map
+//# sourceMappingURL=/build/routes/minimizacion-transacciones-5V32LAUF.js.map

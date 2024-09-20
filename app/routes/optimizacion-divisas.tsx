@@ -1,192 +1,154 @@
-import { useState, useEffect } from 'react';
-import { Form, useActionData, useSubmit, useLoaderData } from '@remix-run/react';
-import { json, ActionFunction, LoaderFunction } from '@remix-run/node';
-import { floydWarshallAlgorithm, ConversionResult, Transaction } from '../utils/floydWarshallAlgorithm';
+import { useState } from 'react';
+import { Form, useActionData, useNavigation, useSubmit } from '@remix-run/react';
+import { json, ActionFunction } from '@remix-run/node';
+import { findBestConversionPath } from '../types/currencyExchange';
+import { ExchangeHouse, ConversionResult } from '../types/exchangeTypes';
 import { exportToExcel } from '../utils/excelExport';
-import { currencieslist } from '~/types/currencies';
-import { getExchangeRates } from '../utils/currencyUtils';
-
-export const loader: LoaderFunction = async () => {
-  try {
-    const { rates, fromApi } = await getExchangeRates();
-    return json({ exchangeRates: rates, fromApi, error: null });
-  } catch (error) {
-    console.error('Error loading exchange rates:', error);
-    return json({ 
-      exchangeRates: null, 
-      fromApi: false,
-      error: 'Failed to load exchange rates. Please try again.' 
-    }, { status: 500 });
-  }
-};
-
-export const action: ActionFunction = async ({ request }) => {
-  try {
-    const formData = await request.formData();
-    const transactions = JSON.parse(formData.get('transactions') as string);
-    
-    const { rates, fromApi } = await getExchangeRates();
-    console.log('Exchange rates:', rates);
-    
-    const result = floydWarshallAlgorithm(transactions, rates);
-    console.log('Floyd-Warshall result:', result);
-    
-    return json({ result, exchangeRates: rates, fromApi });
-  } catch (error) {
-    console.error('Error calculating optimal routes:', error);
-    return json({ error: 'Failed to calculate optimal routes. Please try again.' }, { status: 500 });
-  }
-};
 
 export default function OptimizacionDivisas() {
-  const actionData = useActionData<{ result: ConversionResult[], exchangeRates: Record<string, number>, fromApi: boolean, error?: string }>();
-  const loaderData = useLoaderData<{ exchangeRates: Record<string, number> | null, fromApi: boolean, error: string | null }>();
+  const [amount, setAmount] = useState<number>(1000);
+  const [currency, setCurrency] = useState<string>('USD');
+  const [exchangeHouses, setExchangeHouses] = useState<ExchangeHouse[]>([]);
+  const [maxSteps, setMaxSteps] = useState<number>(5);
+  const [allowRepetitions, setAllowRepetitions] = useState<boolean>(false);
+
+  const actionData = useActionData<{ result: ConversionResult }>();
+  const navigation = useNavigation();
   const submit = useSubmit();
-  const [currencies] = useState(currencieslist);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [currentTransaction, setCurrentTransaction] = useState<Partial<Transaction>>({});
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (loaderData.error) {
-      setError(loaderData.error);
-    } else {
-      setError(null);
-    }
-  }, [loaderData]);
-
-  useEffect(() => {
-    if (actionData?.error) {
-      setError(actionData.error);
-    } else if (actionData?.result) {
-      setError(null);
-    }
-  }, [actionData]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setCurrentTransaction(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddTransaction = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (currentTransaction.from && currentTransaction.to && currentTransaction.amount && currentTransaction.name) {
-      setTransactions(prev => [...prev, currentTransaction as Transaction]);
-      setCurrentTransaction({});
-    }
+    const formData = new FormData();
+    formData.append('amount', amount.toString());
+    formData.append('currency', currency);
+    formData.append('exchangeHouses', JSON.stringify(exchangeHouses));
+    formData.append('maxSteps', maxSteps.toString());
+    formData.append('allowRepetitions', allowRepetitions.toString());
+    submit(formData, { method: 'post' });
   };
 
-  const handleCalculateOptimalRoutes = () => {
-    if (transactions.length > 0) {
-      submit({ transactions: JSON.stringify(transactions) }, { method: 'post' });
-    } else {
-      setError('Please add at least one transaction before calculating optimal routes.');
-    }
+  const addExchangeHouse = () => {
+    setExchangeHouses([...exchangeHouses, { name: '', exchanges: [] }]);
   };
 
-  const handleExport = () => {
+  const updateExchangeHouse = (index: number, house: ExchangeHouse) => {
+    const newHouses = [...exchangeHouses];
+    newHouses[index] = house;
+    setExchangeHouses(newHouses);
+  };
+
+  const handleExportToExcel = () => {
     if (actionData?.result) {
-      exportToExcel(actionData.result, 'Optimizacion_Divisas');
+      const data = [
+        { Step: 'Initial', Amount: actionData.result.initialAmount, Currency: currency },
+        ...actionData.result.path.map((step, index) => ({
+          Step: index + 1,
+          Amount: step.toAmount,
+          Currency: step.to,
+          ExchangeHouse: step.exchangeHouse,
+          Rate: step.rate,
+          Operation: step.isBuy ? 'Compra' : 'Venta'
+        })),
+        { Step: 'Final', Amount: actionData.result.finalAmountInUSD, Currency: actionData.result.path[actionData.result.path.length - 1].to }
+      ];
+      exportToExcel(data, 'OptimalConversionPath');
     }
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <h1 className="text-4xl font-bold mb-8 text-center text-blue-600">Optimización de Rutas de Conversión de Divisas</h1>
-      
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <strong className="font-bold">Error:</strong>
-          <span className="block sm:inline"> {error}</span>
-        </div>
-      )}
+    <div className="container mx-auto p-4 max-w-4xl bg-gray-100 rounded-lg shadow-lg">
+      <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">Optimización de Conversión de Divisas</h1>
 
-      {(loaderData.fromApi || actionData?.fromApi) && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <span className="block sm:inline">Tasas de cambio obtenidas exitosamente de la API.</span>
-        </div>
-      )}
-
-      <form onSubmit={handleAddTransaction} className="space-y-4 mb-8">
+      <Form onSubmit={handleSubmit} className="mb-8 space-y-6">
         <div className="grid grid-cols-2 gap-4">
-          <select
-            name="from"
-            value={currentTransaction.from || ''}
-            onChange={handleInputChange}
-            className="p-2 border rounded"
-            required
-          >
-            <option value="">Desde</option>
-            {currencies.map(currency => (
-              <option key={currency.code} value={currency.code}>{currency.code} - {currency.name}</option>
-            ))}
-          </select>
-          <select
-            name="to"
-            value={currentTransaction.to || ''}
-            onChange={handleInputChange}
-            className="p-2 border rounded"
-            required
-          >
-            <option value="">Hasta</option>
-            {currencies.map(currency => (
-              <option key={currency.code} value={currency.code}>{currency.code} - {currency.name}</option>
-            ))}
-          </select>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">Cantidad inicial:</label>
+            <input
+              type="number"
+              id="amount"
+              value={amount}
+              onChange={(e) => setAmount(Number(e.target.value))}
+              className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+            <p className="mt-2 text-sm text-gray-500">Ingrese la cantidad de dinero con la que desea iniciar la operación.</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-2">Moneda inicial:</label>
+            <input
+              type="text"
+              id="currency"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+            <p className="mt-2 text-sm text-gray-500">Ingrese el código de la moneda inicial (ej. USD, EUR, PEN).</p>
+          </div>
         </div>
-        <input
-          type="number"
-          name="amount"
-          value={currentTransaction.amount || ''}
-          onChange={handleInputChange}
-          placeholder="Monto"
-          className="p-2 border rounded w-full"
-          required
-        />
-        <input
-          type="text"
-          name="name"
-          value={currentTransaction.name || ''}
-          onChange={handleInputChange}
-          placeholder="Nombre de la transacción"
-          className="p-2 border rounded w-full"
-          required
-        />
-        <button type="submit" className="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition">
-          Agregar Transacción
+        <div className="bg-white p-4 rounded-lg shadow">
+          <label htmlFor="maxSteps" className="block text-sm font-medium text-gray-700 mb-2">Máximo de pasos:</label>
+          <input
+            type="number"
+            id="maxSteps"
+            value={maxSteps}
+            onChange={(e) => setMaxSteps(Number(e.target.value))}
+            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          />
+          <p className="mt-2 text-sm text-gray-500">Número máximo de conversiones permitidas en la ruta.</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h2 className="text-xl font-bold mb-4 text-blue-600">Casas de Cambio</h2>
+          {exchangeHouses.map((house, index) => (
+            <ExchangeHouseInput
+              key={index}
+              house={house}
+              onChange={(updatedHouse) => updateExchangeHouse(index, updatedHouse)}
+            />
+          ))}
+          <button type="button" onClick={addExchangeHouse} className="mt-4 bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300">
+            Agregar Casa de Cambio
+          </button>
+        </div>
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="allowRepetitions"
+            checked={allowRepetitions}
+            onChange={(e) => setAllowRepetitions(e.target.checked)}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label htmlFor="allowRepetitions" className="ml-2 block text-sm text-gray-900">
+            Permitir repeticiones de monedas en la ruta
+          </label>
+        </div>
+        <button type="submit" className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition duration-300">
+          Calcular ruta óptima
         </button>
-      </form>
-
-      {transactions.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Transacciones Agregadas</h2>
-          <ul>
-            {transactions.map((t, index) => (
-              <li key={index}>{t.name}: {t.amount} {t.from} a {t.to}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <button 
-        onClick={handleCalculateOptimalRoutes}
-        className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition mb-8"
-      >
-        Calcular Rutas Óptimas
-      </button>
+      </Form>
 
       {actionData?.result && (
-        <div className="mt-8">
-          <h2 className="text-2xl font-bold mb-4">Resultados</h2>
-          <ul>
-            {actionData.result.map((r, index) => (
-              <li key={index}>{r.from} a {r.to}: Tasa = {r.rate.toFixed(4)}, Ruta: {r.path.join(' -> ')}</li>
+        <div className="mt-8 bg-white p-6 rounded-lg shadow">
+          <h2 className="text-2xl font-bold mb-4 text-blue-600">Resultado Óptimo</h2>
+          <p className="text-lg">Ganancia: <span className={`font-bold ${actionData.result.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>${actionData.result.profit.toFixed(2)} USD</span> ({actionData.result.profitPercentage.toFixed(2)}%)</p>
+          <p className="text-lg">Cantidad inicial: ${actionData.result.initialAmount.toFixed(2)} {currency}</p>
+          <p className="text-lg">Cantidad final: ${actionData.result.finalAmountInUSD.toFixed(2)} USD</p>
+          <h3 className="text-xl font-bold mt-6 mb-2 text-blue-600">Pasos:</h3>
+          <ol className="list-decimal list-inside space-y-2">
+            {actionData.result.path.map((step, index) => (
+              <li key={index} className="bg-gray-100 p-2 rounded">
+                <span className="font-bold">{step.exchangeHouse}:</span> {step.fromAmount.toFixed(2)} {step.from} → {step.toAmount.toFixed(2)} {step.to}
+                <span className="text-sm text-gray-600 ml-2">({step.isBuy ? 'Compra' : 'Venta'}, Tasa: {step.rate.toFixed(4)})</span>
+              </li>
+            ))}
+          </ol>
+          <h3 className="text-xl font-bold mt-6 mb-2 text-blue-600">Otras rutas posibles:</h3>
+          <ul className="list-disc list-inside space-y-1">
+            {actionData.result.allPaths.slice(0, 5).map((path, index) => (
+              <li key={index}>
+                Ganancia: ${path.profit.toFixed(2)} USD ({path.profitPercentage.toFixed(2)}%)
+              </li>
             ))}
           </ul>
-          <button
-            onClick={handleExport}
-            className="mt-4 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition"
-          >
+          <button onClick={handleExportToExcel} className="mt-6 bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300">
             Exportar a Excel
           </button>
         </div>
@@ -194,3 +156,87 @@ export default function OptimizacionDivisas() {
     </div>
   );
 }
+
+function ExchangeHouseInput({ house, onChange }: { house: ExchangeHouse, onChange: (house: ExchangeHouse) => void }) {
+  const addExchange = () => {
+    onChange({ ...house, exchanges: [...house.exchanges, { fromCurrency: '', toCurrency: '', buyRate: 0, sellRate: 0 }] });
+  };
+
+  const updateExchange = (index: number, exchange: { fromCurrency: string; toCurrency: string; buyRate: number; sellRate: number }) => {
+    const newExchanges = [...house.exchanges];
+    newExchanges[index] = exchange;
+    onChange({ ...house, exchanges: newExchanges });
+  };
+
+  return (
+    <div className="border p-4 rounded mb-4 bg-gray-50">
+      <input
+        type="text"
+        value={house.name}
+        onChange={(e) => onChange({ ...house, name: e.target.value })}
+        placeholder="Nombre de la casa de cambio"
+        className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 mb-2"
+      />
+      {house.exchanges.map((exchange, index) => (
+        <div key={index} className="flex flex-wrap -mx-2 mb-2">
+          <div className="px-2 w-1/4">
+            <input
+              type="text"
+              value={exchange.fromCurrency}
+              onChange={(e) => updateExchange(index, { ...exchange, fromCurrency: e.target.value })}
+              placeholder="De"
+              className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div className="px-2 w-1/4">
+            <input
+              type="text"
+              value={exchange.toCurrency}
+              onChange={(e) => updateExchange(index, { ...exchange, toCurrency: e.target.value })}
+              placeholder="A"
+              className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div className="px-2 w-1/4">
+            <input
+              type="number"
+              value={exchange.buyRate || ''}
+              onChange={(e) => updateExchange(index, { ...exchange, buyRate: Number(e.target.value) })}
+              placeholder="Tasa de compra"
+              className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div className="px-2 w-1/4">
+            <input
+              type="number"
+              value={exchange.sellRate || ''}
+              onChange={(e) => updateExchange(index, { ...exchange, sellRate: Number(e.target.value) })}
+              placeholder="Tasa de venta"
+              className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+      ))}
+      <button type="button" onClick={addExchange} className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300">
+        Agregar Cambio
+      </button>
+    </div>
+  );
+}
+
+export const action: ActionFunction = async ({ request }) => {
+  const formData = await request.formData();
+  const amount = Number(formData.get('amount'));
+  const currency = formData.get('currency') as string;
+  const exchangeHouses = JSON.parse(formData.get('exchangeHouses') as string) as ExchangeHouse[];
+  const maxSteps = Number(formData.get('maxSteps'));
+  const allowRepetitions = formData.get('allowRepetitions') === 'true';
+
+  console.log('Input data:', JSON.stringify({ amount, currency, exchangeHouses, maxSteps, allowRepetitions }, null, 2));
+
+  const result = findBestConversionPath(amount, currency, exchangeHouses, maxSteps, allowRepetitions);
+  
+  console.log('Result:', JSON.stringify(result, null, 2));
+
+  return json({ result });
+};

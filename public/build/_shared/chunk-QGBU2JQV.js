@@ -21881,12 +21881,45 @@ if (import.meta) {
     //@ts-expect-error
     "app\\utils\\excelExport.ts"
   );
-  import.meta.hot.lastModified = "1726800926435.5137";
+  import.meta.hot.lastModified = "1726817775895.6326";
 }
 function exportToExcel(data, fileName) {
   const ws = utils.json_to_sheet(data);
   const wb = utils.book_new();
-  utils.book_append_sheet(wb, ws, "Sheet1");
+  const headerStyle = {
+    font: { bold: true, color: { rgb: "FFFFFF" } },
+    fill: { fgColor: { rgb: "4F81BD" } }
+  };
+  const evenRowStyle = {
+    fill: { fgColor: { rgb: "E9EDF1" } }
+  };
+  const oddRowStyle = {
+    fill: { fgColor: { rgb: "D3DFEE" } }
+  };
+  const range = utils.decode_range(ws["!ref"]);
+  for (let C = range.s.c; C <= range.e.c; ++C) {
+    const address = utils.encode_col(C) + "1";
+    if (!ws[address])
+      continue;
+    ws[address].s = headerStyle;
+  }
+  for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const address = utils.encode_cell({ r: R, c: C });
+      if (!ws[address])
+        continue;
+      ws[address].s = R % 2 === 0 ? evenRowStyle : oddRowStyle;
+    }
+  }
+  const colWidths = data.reduce((acc, row) => {
+    Object.keys(row).forEach((key, i) => {
+      const cellValue = row[key] ? row[key].toString() : "";
+      acc[i] = Math.max(acc[i] || 0, cellValue.length);
+    });
+    return acc;
+  }, {});
+  ws["!cols"] = Object.keys(colWidths).map((i) => ({ wch: colWidths[i] }));
+  utils.book_append_sheet(wb, ws, "Optimal Conversion Path");
   writeFileSync(wb, `${fileName}.xlsx`);
 }
 
@@ -21901,4 +21934,4 @@ xlsx/xlsx.mjs:
 xlsx/xlsx.mjs:
   (*! sheetjs (C) 2013-present SheetJS -- http://sheetjs.com *)
 */
-//# sourceMappingURL=/build/_shared/chunk-VS4ZVN4Y.js.map
+//# sourceMappingURL=/build/_shared/chunk-QGBU2JQV.js.map
