@@ -1,103 +1,134 @@
-import { ExchangeHouse, Exchange, ConversionStep, ConversionResult } from '../types/exchangeTypes';
+import { ExchangeHouse, ConversionResult, Graph, ConversionStep } from './exchangeTypes';
 
-function findBestConversionPath(
-  initialAmount: number,
-  initialCurrency: string,
+function buildGraph(exchangeHouses: ExchangeHouse[]): Graph {
+  const graph: Graph = {};
+
+  exchangeHouses.forEach(house => {
+    house.exchanges.forEach(exchange => {
+      if (!graph[exchange.fromCurrency]) {
+        graph[exchange.fromCurrency] = {};
+      }
+      if (!graph[exchange.toCurrency]) {
+        graph[exchange.toCurrency] = {};
+      }
+
+      // Buy rate
+      graph[exchange.fromCurrency][exchange.toCurrency] = {
+        rate: exchange.buyRate,
+        exchangeHouse: house.name,
+        isBuy: true
+      };
+
+      // Sell rate
+      graph[exchange.toCurrency][exchange.fromCurrency] = {
+        rate: 1 / exchange.sellRate,
+        exchangeHouse: house.name,
+        isBuy: false
+      };
+    });
+  });
+
+  return graph;
+}
+
+function bellmanFord(graph: Graph, start: string, amount: number, maxSteps: number, allowRepetitions: boolean): ConversionResult {
+  const distances: { [key: string]: number[] } = {};
+  const predecessors: { [key: string]: (string | null)[] } = {};
+  const exchangeHouses: { [key: string]: string[] } = {};
+  const isBuy: { [key: string]: boolean[] } = {};
+
+  Object.keys(graph).forEach(node => {
+    distances[node] = new Array(maxSteps + 1).fill(node === start ? amount : -Infinity);
+    predecessors[node] = new Array(maxSteps + 1).fill(null);
+    exchangeHouses[node] = new Array(maxSteps + 1).fill('');
+    isBuy[node] = new Array(maxSteps + 1).fill(false);
+  });
+
+  for (let step = 1; step <= maxSteps; step++) {
+    let updated = false;
+    Object.keys(graph).forEach(from => {
+      Object.keys(graph[from]).forEach(to => {
+        const rate = graph[from][to].rate;
+        const newAmount = distances[from][step - 1] * rate;
+        if (newAmount > distances[to][step] && (allowRepetitions || from !== predecessors[to][step - 1])) {
+          distances[to][step] = newAmount;
+          predecessors[to][step] = from;
+          exchangeHouses[to][step] = graph[from][to].exchangeHouse;
+          isBuy[to][step] = graph[from][to].isBuy;
+          updated = true;
+        }
+      });
+    });
+    if (!updated) break;
+  }
+
+  // Find the currency with the maximum final amount at the last step
+  let maxCurrency = Object.keys(distances).reduce((a, b) => distances[a][maxSteps] > distances[b][maxSteps] ? a : b);
+
+  // Reconstruct the path
+  const path: ConversionStep[] = [];
+  let current = maxCurrency;
+  for (let step = maxSteps; step > 0; step--) {
+    const prev = predecessors[current][step];
+    if (prev === null) break;
+    path.unshift({
+      exchangeHouse: exchangeHouses[current][step],
+      from: prev,
+      to: current,
+      fromAmount: distances[prev][step - 1],
+      toAmount: distances[current][step],
+      rate: graph[prev][current].rate,
+      isBuy: isBuy[current][step]
+    });
+    current = prev;
+  }
+
+  const finalAmount = distances[maxCurrency][maxSteps];
+  const profit = finalAmount - amount;
+  const profitPercentage = (profit / amount) * 100;
+
+  // Calculate alternative paths
+  const allPaths = Object.keys(distances).map(currency => ({
+    currency,
+    profit: distances[currency][maxSteps] - amount,
+    profitPercentage: ((distances[currency][maxSteps] - amount) / amount) * 100
+  })).sort((a, b) => b.profit - a.profit);
+
+  return {
+    initialAmount: amount,
+    finalAmountInUSD: finalAmount, // Assuming USD as the base currency
+    profit,
+    profitPercentage,
+    path,
+    allPaths
+  };
+}
+
+export function findBestConversionPath(
+  amount: number,
+  startCurrency: string,
   exchangeHouses: ExchangeHouse[],
   maxSteps: number,
   allowRepetitions: boolean
 ): ConversionResult {
-  const currencies = new Set<string>();
-  exchangeHouses.forEach(house => 
-    house.exchanges.forEach(exchange => {
-      currencies.add(exchange.fromCurrency);
-      currencies.add(exchange.toCurrency);
-    })
-  );
-  const currencyList = Array.from(currencies);
-  
-  // Inicializar las estructuras de datos
-  const graph: { [key: string]: { [key: string]: { rate: number, exchangeHouse: string } } } = {};
-  currencyList.forEach(currency => {
-    graph[currency] = {};
-    currencyList.forEach(otherCurrency => {
-      graph[currency][otherCurrency] = { rate: currency === otherCurrency ? 1 : 0, exchangeHouse: '' };
-    });
-  });
+  const graph = buildGraph(exchangeHouses);
+  const result = bellmanFord(graph, startCurrency, amount, maxSteps, allowRepetitions);
 
-  // Llenar el grafo con las tasas de cambio
-  exchangeHouses.forEach(house => {
-    house.exchanges.forEach(exchange => {
-      graph[exchange.fromCurrency][exchange.toCurrency] = { rate: exchange.sellRate, exchangeHouse: house.name };
-      graph[exchange.toCurrency][exchange.fromCurrency] = { rate: 1 / exchange.buyRate, exchangeHouse: house.name };
-    });
-  });
-
-  let bestResult: ConversionResult = {
-    path: [],
-    initialAmount,
-    finalAmount: initialAmount,
-    finalAmountInUSD: initialAmount,
-    profit: 0,
-    profitPercentage: 0,
-    allPaths: []
-  };
-
-  function dfs(currentCurrency: string, currentAmount: number, path: ConversionStep[], visited: Set<string>) {
-    if (path.length > 0) {
-      const finalAmountInUSD = currentCurrency === 'USD' ? currentAmount : currentAmount * graph[currentCurrency]['USD'].rate;
-      const profit = finalAmountInUSD - initialAmount;
-      const profitPercentage = (profit / initialAmount) * 100;
-
-      const currentResult: ConversionResult = {
-        path: [...path],
-        initialAmount,
-        finalAmount: currentAmount,
-        finalAmountInUSD,
-        profit,
-        profitPercentage,
-        allPaths: []
-      };
-
-      bestResult.allPaths.push(currentResult);
-
-      if (profit > bestResult.profit) {
-        bestResult = currentResult;
-      }
-    }
-
-    if (path.length >= maxSteps) return;
-
-    for (const nextCurrency in graph[currentCurrency]) {
-      if (!allowRepetitions && visited.has(nextCurrency)) continue;
-
-      const { rate, exchangeHouse } = graph[currentCurrency][nextCurrency];
-      if (rate === 0) continue;
-
-      const nextAmount = currentAmount * rate;
-      const step: ConversionStep = {
-        exchangeHouse,
-        from: currentCurrency,
-        to: nextCurrency,
-        fromAmount: currentAmount,
-        toAmount: nextAmount,
-        rate,
-        isBuy: false
-      };
-
-      path.push(step);
-      visited.add(nextCurrency);
-
-      dfs(nextCurrency, nextAmount, path, new Set(visited));
-
-      path.pop();
-      visited.delete(nextCurrency);
-    }
+  // Si no se encontró una ruta válida, devuelve un resultado con valores predeterminados
+  if (result.path.length === 0) {
+    return {
+      initialAmount: amount,
+      finalAmountInUSD: amount,
+      profit: 0,
+      profitPercentage: 0,
+      path: [],
+      allPaths: Object.keys(graph).map(currency => ({
+        currency,
+        profit: currency === startCurrency ? 0 : null,
+        profitPercentage: currency === startCurrency ? 0 : null
+      }))
+    };
   }
 
-  dfs(initialCurrency, initialAmount, [], new Set([initialCurrency]));
-
-  return bestResult;
+  return result;
 }
-
-export { findBestConversionPath };

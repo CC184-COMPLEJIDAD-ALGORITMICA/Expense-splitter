@@ -47,7 +47,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\routes\\optimizacion-divisas.tsx"
   );
-  import.meta.hot.lastModified = "1726822347569.54";
+  import.meta.hot.lastModified = "1726823580437.1206";
 }
 function OptimizacionDivisas() {
   _s();
@@ -275,14 +275,14 @@ function OptimizacionDivisas() {
         lineNumber: 125,
         columnNumber: 11
       }, this),
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("ol", { className: "list-decimal list-inside space-y-2", children: actionData.result.path.map((step, index) => /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("li", { className: "bg-gray-100 p-2 rounded", children: [
+      actionData.result.path.length > 0 ? /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("ol", { className: "list-decimal list-inside space-y-2", children: actionData.result.path.map((step, index) => /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("li", { className: "bg-gray-100 p-2 rounded", children: [
         /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("span", { className: "font-bold", children: [
           step.exchangeHouse,
           ":"
         ] }, void 0, true, {
           fileName: "app/routes/optimizacion-divisas.tsx",
           lineNumber: 128,
-          columnNumber: 17
+          columnNumber: 19
         }, this),
         " ",
         step.fromAmount.toFixed(2),
@@ -301,29 +301,44 @@ function OptimizacionDivisas() {
         ] }, void 0, true, {
           fileName: "app/routes/optimizacion-divisas.tsx",
           lineNumber: 129,
-          columnNumber: 17
+          columnNumber: 19
         }, this)
       ] }, index, true, {
         fileName: "app/routes/optimizacion-divisas.tsx",
         lineNumber: 127,
-        columnNumber: 58
+        columnNumber: 60
       }, this)) }, void 0, false, {
         fileName: "app/routes/optimizacion-divisas.tsx",
         lineNumber: 126,
-        columnNumber: 11
+        columnNumber: 48
+      }, this) : /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("p", { className: "text-red-500", children: "No se encontr\xF3 una ruta de conversi\xF3n v\xE1lida." }, void 0, false, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 131,
+        columnNumber: 21
       }, this),
       /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("h3", { className: "text-xl font-bold mt-6 mb-2 text-blue-600", children: "Otras rutas posibles:" }, void 0, false, {
         fileName: "app/routes/optimizacion-divisas.tsx",
         lineNumber: 132,
         columnNumber: 11
       }, this),
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("ul", { className: "list-disc list-inside space-y-1", children: actionData.result.allPaths.slice(0, 5).map((path, index) => /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("li", { children: [
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("ul", { className: "list-disc list-inside space-y-1", children: actionData.result.allPaths.slice(0, 5).map((path, index) => /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("li", { children: path.profit !== null && path.profitPercentage !== null ? /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(import_jsx_dev_runtime.Fragment, { children: [
         "Ganancia: $",
         path.profit.toFixed(2),
         " USD (",
         path.profitPercentage.toFixed(2),
         "%)"
-      ] }, index, true, {
+      ] }, void 0, true, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 135,
+        columnNumber: 75
+      }, this) : /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(import_jsx_dev_runtime.Fragment, { children: [
+        "No hay conversi\xF3n disponible para ",
+        path.currency
+      ] }, void 0, true, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 135,
+        columnNumber: 160
+      }, this) }, index, false, {
         fileName: "app/routes/optimizacion-divisas.tsx",
         lineNumber: 134,
         columnNumber: 74
@@ -459,4 +474,4 @@ window.$RefreshSig$ = prevRefreshSig;
 export {
   OptimizacionDivisas as default
 };
-//# sourceMappingURL=/build/routes/optimizacion-divisas-VST6HIL2.js.map
+//# sourceMappingURL=/build/routes/optimizacion-divisas-PUUZ4EBK.js.map

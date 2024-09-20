@@ -132,19 +132,27 @@ export default function OptimizacionDivisas() {
           <p className="text-lg">Cantidad inicial: ${actionData.result.initialAmount.toFixed(2)} {currency}</p>
           <p className="text-lg">Cantidad final: ${actionData.result.finalAmountInUSD.toFixed(2)} USD</p>
           <h3 className="text-xl font-bold mt-6 mb-2 text-blue-600">Pasos:</h3>
-          <ol className="list-decimal list-inside space-y-2">
-            {actionData.result.path.map((step, index) => (
-              <li key={index} className="bg-gray-100 p-2 rounded">
-                <span className="font-bold">{step.exchangeHouse}:</span> {step.fromAmount.toFixed(2)} {step.from} → {step.toAmount.toFixed(2)} {step.to}
-                <span className="text-sm text-gray-600 ml-2">({step.isBuy ? 'Compra' : 'Venta'}, Tasa: {step.rate.toFixed(4)})</span>
-              </li>
-            ))}
-          </ol>
+          {actionData.result.path.length > 0 ? (
+            <ol className="list-decimal list-inside space-y-2">
+              {actionData.result.path.map((step, index) => (
+                <li key={index} className="bg-gray-100 p-2 rounded">
+                  <span className="font-bold">{step.exchangeHouse}:</span> {step.fromAmount.toFixed(2)} {step.from} → {step.toAmount.toFixed(2)} {step.to}
+                  <span className="text-sm text-gray-600 ml-2">({step.isBuy ? 'Compra' : 'Venta'}, Tasa: {step.rate.toFixed(4)})</span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-red-500">No se encontró una ruta de conversión válida.</p>
+          )}
           <h3 className="text-xl font-bold mt-6 mb-2 text-blue-600">Otras rutas posibles:</h3>
           <ul className="list-disc list-inside space-y-1">
             {actionData.result.allPaths.slice(0, 5).map((path, index) => (
               <li key={index}>
-                Ganancia: ${path.profit.toFixed(2)} USD ({path.profitPercentage.toFixed(2)}%)
+                {path.profit !== null && path.profitPercentage !== null ? (
+                  <>Ganancia: ${path.profit.toFixed(2)} USD ({path.profitPercentage.toFixed(2)}%)</>
+                ) : (
+                  <>No hay conversión disponible para {path.currency}</>
+                )}
               </li>
             ))}
           </ul>
