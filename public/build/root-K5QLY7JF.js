@@ -10,16 +10,16 @@ import {
   Scripts,
   ScrollRestoration,
   useLoaderData
-} from "/build/_shared/chunk-SBCI5TGH.js";
+} from "/build/_shared/chunk-SNZIFTKA.js";
 import {
   createHotContext
 } from "/build/_shared/chunk-KHA4OLT4.js";
+import "/build/_shared/chunk-UWV35TSL.js";
 import "/build/_shared/chunk-U4FRFQSK.js";
 import {
   require_jsx_dev_runtime
 } from "/build/_shared/chunk-XGOTYLZ5.js";
 import "/build/_shared/chunk-7M6SC7J5.js";
-import "/build/_shared/chunk-UWV35TSL.js";
 import {
   __commonJS,
   __toESM
@@ -36,7 +36,7 @@ var require_auth = __commonJS({
 var import_node = __toESM(require_node(), 1);
 
 // app/styles/tailwind.css
-var tailwind_default = "/build/_assets/tailwind-GDL2JN43.css";
+var tailwind_default = "/build/_assets/tailwind-FPXYDJ2F.css";
 
 // app/root.tsx
 var import_auth = __toESM(require_auth(), 1);
@@ -60,7 +60,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\components\\Nav.tsx"
   );
-  import.meta.hot.lastModified = "1726699064502.3843";
+  import.meta.hot.lastModified = "1726795836747.2976";
 }
 function Nav({
   user
@@ -71,10 +71,26 @@ function Nav({
       lineNumber: 27,
       columnNumber: 9
     }, this),
-    /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { children: user ? /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("span", { className: "text-white mr-4", children: [
-      "Welcome, ",
-      user.username,
-      "!"
+    /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { children: user ? /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(import_jsx_dev_runtime.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("span", { className: "text-white mr-4", children: [
+        "Welcome, ",
+        user.username,
+        "!"
+      ] }, void 0, true, {
+        fileName: "app/components/Nav.tsx",
+        lineNumber: 32,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(Link, { to: "/minimizacion-transacciones", className: "text-white mr-4", children: "Optimizaci\xF3n de Transferencias" }, void 0, false, {
+        fileName: "app/components/Nav.tsx",
+        lineNumber: 33,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(Link, { to: "/optimizacion-divisas", className: "text-white mr-4", children: "Optimizaci\xF3n de Divisas" }, void 0, false, {
+        fileName: "app/components/Nav.tsx",
+        lineNumber: 36,
+        columnNumber: 15
+      }, this)
     ] }, void 0, true, {
       fileName: "app/components/Nav.tsx",
       lineNumber: 31,
@@ -82,18 +98,18 @@ function Nav({
     }, this) : /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(import_jsx_dev_runtime.Fragment, { children: [
       /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(Link, { to: "/login", className: "text-white mr-4", children: "Login" }, void 0, false, {
         fileName: "app/components/Nav.tsx",
-        lineNumber: 32,
+        lineNumber: 40,
         columnNumber: 15
       }, this),
       /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(Link, { to: "/register", className: "text-white", children: "Register" }, void 0, false, {
         fileName: "app/components/Nav.tsx",
-        lineNumber: 35,
+        lineNumber: 43,
         columnNumber: 15
       }, this)
     ] }, void 0, true, {
       fileName: "app/components/Nav.tsx",
-      lineNumber: 31,
-      columnNumber: 88
+      lineNumber: 39,
+      columnNumber: 19
     }, this) }, void 0, false, {
       fileName: "app/components/Nav.tsx",
       lineNumber: 30,
@@ -224,4 +240,4 @@ export {
   links,
   meta
 };
-//# sourceMappingURL=/build/root-354UQ2M5.js.map
+//# sourceMappingURL=/build/root-K5QLY7JF.js.map
