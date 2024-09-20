@@ -1,6 +1,6 @@
 import {
   exportToExcel
-} from "/build/_shared/chunk-FUJQJE3X.js";
+} from "/build/_shared/chunk-QGBU2JQV.js";
 import {
   require_node
 } from "/build/_shared/chunk-G7CHZRZX.js";
@@ -46,7 +46,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\routes\\minimizacion-transacciones.tsx"
   );
-  import.meta.hot.lastModified = "1726796315833.3167";
+  import.meta.hot.lastModified = "1726800926434.5134";
 }
 function MinimizacionTransacciones() {
   _s();
@@ -159,4 +159,4 @@ window.$RefreshSig$ = prevRefreshSig;
 export {
   MinimizacionTransacciones as default
 };
-//# sourceMappingURL=/build/routes/minimizacion-transacciones-SGG3RTR7.js.map
+//# sourceMappingURL=/build/routes/minimizacion-transacciones-5V32LAUF.js.map
