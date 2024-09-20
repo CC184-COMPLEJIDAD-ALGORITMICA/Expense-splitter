@@ -68,13 +68,12 @@ Instrucciones de instalación y ejecución
 
 Primero, debes instalar las dependencias necesarias para el frontend. Para ello:
 
-    cd frontend
     npm install
         
 
 ### 2\. Configuración de variables de entorno
 
-Dentro de la carpeta `frontend`, debes crear un archivo `.env` con las siguientes variables de entorno:
+Dentro de la carpeta , debes crear un archivo `.env` con las siguientes variables de entorno:
 
     SESSION_SECRET=tu_secreto_muy_largo_y_aleatorio_aqui
     DATABASE_URL="file:./prisma/dev.db"
