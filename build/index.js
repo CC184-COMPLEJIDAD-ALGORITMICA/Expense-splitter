@@ -625,18 +625,40 @@ function bellmanFord(graph, start, amount, maxSteps, allowRepetitions) {
 }
 function findBestConversionPath(amount, startCurrency, exchangeHouses, maxSteps, allowRepetitions) {
   let graph = buildGraph(exchangeHouses), result = bellmanFord(graph, startCurrency, amount, maxSteps, allowRepetitions);
-  return result.path.length === 0 ? {
-    initialAmount: amount,
-    finalAmountInUSD: amount,
-    profit: 0,
-    profitPercentage: 0,
-    path: [],
-    allPaths: Object.keys(graph).map((currency) => ({
-      currency,
-      profit: currency === startCurrency ? 0 : null,
-      profitPercentage: currency === startCurrency ? 0 : null
-    }))
-  } : result;
+  if (result.path.length === 0)
+    return {
+      initialAmount: amount,
+      finalAmountInUSD: amount,
+      // Assuming the initial amount is in USD
+      profit: 0,
+      profitPercentage: 0,
+      path: [],
+      allPaths: Object.keys(graph).map((currency) => ({
+        currency,
+        profit: currency === startCurrency ? 0 : null,
+        profitPercentage: currency === startCurrency ? 0 : null
+      }))
+    };
+  let finalCurrency = result.path[result.path.length - 1].to, finalAmountInUSD = result.finalAmountInUSD;
+  if (finalCurrency !== "USD") {
+    let usdRate = findUSDRate(graph, finalCurrency);
+    finalAmountInUSD *= usdRate;
+  }
+  let profit = finalAmountInUSD - amount, profitPercentage = profit / amount * 100;
+  return {
+    ...result,
+    finalAmountInUSD,
+    profit,
+    profitPercentage
+  };
+}
+function findUSDRate(graph, currency) {
+  if (graph[currency] && graph[currency].USD)
+    return graph[currency].USD.rate;
+  if (graph.USD && graph.USD[currency])
+    return 1 / graph.USD[currency].rate;
+  let commonCurrency = "EUR";
+  return graph[currency] && graph[currency][commonCurrency] && graph[commonCurrency] && graph[commonCurrency].USD ? graph[currency][commonCurrency].rate * graph[commonCurrency].USD.rate : (console.warn(`No USD conversion rate found for ${currency}. Assuming 1:1 conversion.`), 1);
 }
 
 // app/routes/optimizacion-divisas.tsx
@@ -2960,7 +2982,7 @@ function Login() {
 }
 
 // server-assets-manifest:@remix-run/dev/assets-manifest
-var assets_manifest_default = { entry: { module: "/build/entry.client-4BIYH5ID.js", imports: ["/build/_shared/chunk-O4BRYNJ4.js", "/build/_shared/chunk-SNZIFTKA.js", "/build/_shared/chunk-KHA4OLT4.js", "/build/_shared/chunk-UWV35TSL.js", "/build/_shared/chunk-U4FRFQSK.js", "/build/_shared/chunk-XGOTYLZ5.js", "/build/_shared/chunk-7M6SC7J5.js", "/build/_shared/chunk-PNG5AS42.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-II2EJ4IF.js", imports: ["/build/_shared/chunk-G7CHZRZX.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/_index": { id: "routes/_index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/_index-GHR6GA6X.js", imports: ["/build/_shared/chunk-E7TNPIXH.js", "/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/login": { id: "routes/login", parentId: "root", path: "login", index: void 0, caseSensitive: void 0, module: "/build/routes/login-4DDJMFTN.js", imports: ["/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/logout": { id: "routes/logout", parentId: "root", path: "logout", index: void 0, caseSensitive: void 0, module: "/build/routes/logout-GGSXPJWV.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/minimizacion-transacciones": { id: "routes/minimizacion-transacciones", parentId: "root", path: "minimizacion-transacciones", index: void 0, caseSensitive: void 0, module: "/build/routes/minimizacion-transacciones-5V32LAUF.js", imports: ["/build/_shared/chunk-QGBU2JQV.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/optimizacion-divisas": { id: "routes/optimizacion-divisas", parentId: "root", path: "optimizacion-divisas", index: void 0, caseSensitive: void 0, module: "/build/routes/optimizacion-divisas-PUUZ4EBK.js", imports: ["/build/_shared/chunk-QGBU2JQV.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/register": { id: "routes/register", parentId: "root", path: "register", index: void 0, caseSensitive: void 0, module: "/build/routes/register-SCMYMTNU.js", imports: ["/build/_shared/chunk-E7TNPIXH.js", "/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "c62e6ece", hmr: { runtime: "/build/_shared\\chunk-KHA4OLT4.js", timestamp: 1726823589907 }, url: "/build/manifest-C62E6ECE.js" };
+var assets_manifest_default = { entry: { module: "/build/entry.client-4BIYH5ID.js", imports: ["/build/_shared/chunk-O4BRYNJ4.js", "/build/_shared/chunk-SNZIFTKA.js", "/build/_shared/chunk-KHA4OLT4.js", "/build/_shared/chunk-UWV35TSL.js", "/build/_shared/chunk-U4FRFQSK.js", "/build/_shared/chunk-XGOTYLZ5.js", "/build/_shared/chunk-7M6SC7J5.js", "/build/_shared/chunk-PNG5AS42.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-II2EJ4IF.js", imports: ["/build/_shared/chunk-G7CHZRZX.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/_index": { id: "routes/_index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/_index-GHR6GA6X.js", imports: ["/build/_shared/chunk-E7TNPIXH.js", "/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/login": { id: "routes/login", parentId: "root", path: "login", index: void 0, caseSensitive: void 0, module: "/build/routes/login-4DDJMFTN.js", imports: ["/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/logout": { id: "routes/logout", parentId: "root", path: "logout", index: void 0, caseSensitive: void 0, module: "/build/routes/logout-GGSXPJWV.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/minimizacion-transacciones": { id: "routes/minimizacion-transacciones", parentId: "root", path: "minimizacion-transacciones", index: void 0, caseSensitive: void 0, module: "/build/routes/minimizacion-transacciones-5V32LAUF.js", imports: ["/build/_shared/chunk-QGBU2JQV.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/optimizacion-divisas": { id: "routes/optimizacion-divisas", parentId: "root", path: "optimizacion-divisas", index: void 0, caseSensitive: void 0, module: "/build/routes/optimizacion-divisas-PUUZ4EBK.js", imports: ["/build/_shared/chunk-QGBU2JQV.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/register": { id: "routes/register", parentId: "root", path: "register", index: void 0, caseSensitive: void 0, module: "/build/routes/register-SCMYMTNU.js", imports: ["/build/_shared/chunk-E7TNPIXH.js", "/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "c62e6ece", hmr: { runtime: "/build/_shared\\chunk-KHA4OLT4.js", timestamp: 1726824545582 }, url: "/build/manifest-C62E6ECE.js" };
 
 // server-entry-module:@remix-run/dev/server-build
 var mode = "development", assetsBuildDirectory = "public\\build", future = { v3_fetcherPersist: !1, v3_relativeSplatPath: !1, v3_throwAbortReason: !1, unstable_singleFetch: !1, unstable_lazyRouteDiscovery: !1, unstable_optimizeDeps: !1 }, publicPath = "/build/", entry = { module: entry_server_exports }, routes = {
