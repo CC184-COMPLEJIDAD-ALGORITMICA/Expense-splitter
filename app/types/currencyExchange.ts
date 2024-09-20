@@ -114,11 +114,11 @@ export function findBestConversionPath(
   const graph = buildGraph(exchangeHouses);
   const result = bellmanFord(graph, startCurrency, amount, maxSteps, allowRepetitions);
 
-  // Si no se encontró una ruta válida, devuelve un resultado con valores predeterminados
+  // If no valid path was found, return a result with default values
   if (result.path.length === 0) {
     return {
       initialAmount: amount,
-      finalAmountInUSD: amount,
+      finalAmountInUSD: amount, // Assuming the initial amount is in USD
       profit: 0,
       profitPercentage: 0,
       path: [],
@@ -130,5 +130,38 @@ export function findBestConversionPath(
     };
   }
 
-  return result;
+  // Convert final amount to USD if it's not already
+  const finalCurrency = result.path[result.path.length - 1].to;
+  let finalAmountInUSD = result.finalAmountInUSD;
+  if (finalCurrency !== 'USD') {
+    const usdRate = findUSDRate(graph, finalCurrency);
+    finalAmountInUSD *= usdRate;
+  }
+
+  const profit = finalAmountInUSD - amount;
+  const profitPercentage = (profit / amount) * 100;
+
+  return {
+    ...result,
+    finalAmountInUSD,
+    profit,
+    profitPercentage
+  };
+}
+
+function findUSDRate(graph: Graph, currency: string): number {
+  if (graph[currency] && graph[currency]['USD']) {
+    return graph[currency]['USD'].rate;
+  }
+  if (graph['USD'] && graph['USD'][currency]) {
+    return 1 / graph['USD'][currency].rate;
+  }
+  // If direct conversion is not available, use a two-step conversion through a common currency (e.g., EUR)
+  const commonCurrency = 'EUR';
+  if (graph[currency] && graph[currency][commonCurrency] && graph[commonCurrency] && graph[commonCurrency]['USD']) {
+    return graph[currency][commonCurrency].rate * graph[commonCurrency]['USD'].rate;
+  }
+  // If no conversion path is found, return 1 as a fallback (assuming 1:1 conversion)
+  console.warn(`No USD conversion rate found for ${currency}. Assuming 1:1 conversion.`);
+  return 1;
 }

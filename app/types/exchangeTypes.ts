@@ -26,7 +26,7 @@ export interface ConversionResult {
   profit: number;
   profitPercentage: number;
   path: ConversionStep[];
-  allPaths: { profit: number; profitPercentage: number }[];
+  allPaths: { currency: string; profit: number | null; profitPercentage: number | null }[];
 }
 
 export interface Graph {
