@@ -1,11 +1,10 @@
 import {
   exportToExcel
-} from "/build/_shared/chunk-FUJQJE3X.js";
+} from "/build/_shared/chunk-VS4ZVN4Y.js";
 import {
   require_node
 } from "/build/_shared/chunk-G7CHZRZX.js";
 import {
-  Form,
   useActionData,
   useLoaderData,
   useSubmit
@@ -35,7 +34,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\types\\currencies.ts"
   );
-  import.meta.hot.lastModified = "1726795676055.0488";
+  import.meta.hot.lastModified = "1726800926435.5137";
 }
 var currencieslist = [
   { code: "USD", name: "US Dollar" },
@@ -222,254 +221,238 @@ if (import.meta) {
     //@ts-expect-error
     "app\\routes\\optimizacion-divisas.tsx"
   );
-  import.meta.hot.lastModified = "1726797788719.1323";
+  import.meta.hot.lastModified = "1726811196309.6792";
 }
 function OptimizacionDivisas() {
   _s();
   const actionData = useActionData();
   const loaderData = useLoaderData();
   const submit = useSubmit();
-  const [currencies, setCurrencies] = (0, import_react.useState)(currencieslist);
-  const [exchangeRates, setExchangeRates] = (0, import_react.useState)([]);
-  const [showTutorial, setShowTutorial] = (0, import_react.useState)(false);
+  const [currencies] = (0, import_react.useState)(currencieslist);
+  const [transactions, setTransactions] = (0, import_react.useState)([]);
+  const [currentTransaction, setCurrentTransaction] = (0, import_react.useState)({});
+  const [error, setError] = (0, import_react.useState)(null);
   (0, import_react.useEffect)(() => {
-    const initialRates = currencies.map((currency) => ({
-      from: "USD",
-      to: currency.code,
-      rate: currency.code === "USD" ? 1 : 0
+    if (loaderData.error) {
+      setError(loaderData.error);
+    } else {
+      setError(null);
+    }
+  }, [loaderData]);
+  (0, import_react.useEffect)(() => {
+    if (actionData?.error) {
+      setError(actionData.error);
+    } else if (actionData?.result) {
+      setError(null);
+    }
+  }, [actionData]);
+  const handleInputChange = (e) => {
+    const {
+      name,
+      value
+    } = e.target;
+    setCurrentTransaction((prev) => ({
+      ...prev,
+      [name]: value
     }));
-    setExchangeRates(initialRates);
-  }, []);
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    submit({
-      exchangeRates: JSON.stringify(exchangeRates)
-    }, {
-      method: "post"
-    });
   };
-  const handleExchangeRateChange = (index, value) => {
-    const newRates = [...exchangeRates];
-    newRates[index].rate = parseFloat(value);
-    setExchangeRates(newRates);
+  const handleAddTransaction = (e) => {
+    e.preventDefault();
+    if (currentTransaction.from && currentTransaction.to && currentTransaction.amount && currentTransaction.name) {
+      setTransactions((prev) => [...prev, currentTransaction]);
+      setCurrentTransaction({});
+    }
+  };
+  const handleCalculateOptimalRoutes = () => {
+    if (transactions.length > 0) {
+      submit({
+        transactions: JSON.stringify(transactions)
+      }, {
+        method: "post"
+      });
+    } else {
+      setError("Please add at least one transaction before calculating optimal routes.");
+    }
   };
   const handleExport = () => {
     if (actionData?.result) {
       exportToExcel(actionData.result, "Optimizacion_Divisas");
     }
   };
-  return /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "container mx-auto p-4", children: [
-    /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("h1", { className: "text-2xl font-bold mb-4", children: "Optimizaci\xF3n de Rutas de Conversi\xF3n de Divisas" }, void 0, false, {
+  return /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "container mx-auto p-4 max-w-4xl", children: [
+    /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("h1", { className: "text-4xl font-bold mb-8 text-center text-blue-600", children: "Optimizaci\xF3n de Rutas de Conversi\xF3n de Divisas" }, void 0, false, {
       fileName: "app/routes/optimizacion-divisas.tsx",
-      lineNumber: 81,
+      lineNumber: 135,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("p", { className: "mb-4", children: [
-      "Valor actual del d\xF3lar: ",
-      loaderData.dollarValue
-    ] }, void 0, true, {
-      fileName: "app/routes/optimizacion-divisas.tsx",
-      lineNumber: 82,
-      columnNumber: 7
-    }, this),
-    /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("button", { onClick: () => setShowTutorial(!showTutorial), className: "mb-4 p-2 bg-blue-500 text-white rounded", children: showTutorial ? "Ocultar Tutorial" : "Mostrar Tutorial" }, void 0, false, {
-      fileName: "app/routes/optimizacion-divisas.tsx",
-      lineNumber: 84,
-      columnNumber: 7
-    }, this),
-    showTutorial && /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "mb-6 p-4 bg-gray-100 rounded", children: [
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("h2", { className: "text-xl font-bold mb-2", children: "Tutorial y Ejemplos" }, void 0, false, {
+    error && /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4", role: "alert", children: [
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("strong", { className: "font-bold", children: "Error:" }, void 0, false, {
         fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 89,
+        lineNumber: 138,
         columnNumber: 11
       }, this),
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("p", { children: "El algoritmo de Floyd-Warshall se utiliza para encontrar las rutas m\xE1s eficientes de conversi\xF3n entre divisas. Esto es \xFAtil en varios escenarios reales:" }, void 0, false, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 90,
-        columnNumber: 11
-      }, this),
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("ul", { className: "list-disc list-inside mb-2", children: [
-        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("li", { children: "Comercio internacional: Optimizar costos de conversi\xF3n en transacciones multinacionales." }, void 0, false, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 92,
-          columnNumber: 13
-        }, this),
-        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("li", { children: "Arbitraje de divisas: Identificar oportunidades de beneficio en el mercado FOREX." }, void 0, false, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 93,
-          columnNumber: 13
-        }, this),
-        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("li", { children: "Gesti\xF3n de tesorer\xEDa: Minimizar p\xE9rdidas en conversiones para empresas multinacionales." }, void 0, false, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 94,
-          columnNumber: 13
-        }, this)
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("span", { className: "block sm:inline", children: [
+        " ",
+        error
       ] }, void 0, true, {
         fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 91,
-        columnNumber: 11
-      }, this),
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("p", { children: "El algoritmo funciona construyendo una matriz de todas las posibles conversiones y encontrando el camino m\xE1s corto (o en este caso, la conversi\xF3n m\xE1s favorable) entre cada par de divisas." }, void 0, false, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 96,
-        columnNumber: 11
-      }, this),
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("p", { children: "Es ideal porque:" }, void 0, false, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 97,
-        columnNumber: 11
-      }, this),
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("ul", { className: "list-disc list-inside", children: [
-        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("li", { children: "Considera todas las posibles rutas de conversi\xF3n indirectas." }, void 0, false, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 99,
-          columnNumber: 13
-        }, this),
-        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("li", { children: "Tiene una complejidad de O(n\xB3), eficiente para un n\xFAmero moderado de divisas." }, void 0, false, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 100,
-          columnNumber: 13
-        }, this),
-        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("li", { children: "Proporciona resultados para todas las parejas de divisas en una sola ejecuci\xF3n." }, void 0, false, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 101,
-          columnNumber: 13
-        }, this)
-      ] }, void 0, true, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 98,
+        lineNumber: 139,
         columnNumber: 11
       }, this)
     ] }, void 0, true, {
       fileName: "app/routes/optimizacion-divisas.tsx",
-      lineNumber: 88,
-      columnNumber: 24
+      lineNumber: 137,
+      columnNumber: 17
     }, this),
-    /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(Form, { method: "post", onSubmit: handleSubmit, children: [
-      exchangeRates.map((rate, index) => /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "mb-2", children: [
-        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("span", { className: "mr-2", children: [
-          rate.from,
-          " a ",
-          rate.to,
-          ":"
+    (loaderData.fromApi || actionData?.fromApi) && /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4", role: "alert", children: /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("span", { className: "block sm:inline", children: "Tasas de cambio obtenidas exitosamente de la API." }, void 0, false, {
+      fileName: "app/routes/optimizacion-divisas.tsx",
+      lineNumber: 143,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "app/routes/optimizacion-divisas.tsx",
+      lineNumber: 142,
+      columnNumber: 55
+    }, this),
+    /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("form", { onSubmit: handleAddTransaction, className: "space-y-4 mb-8", children: [
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "grid grid-cols-2 gap-4", children: [
+        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("select", { name: "from", value: currentTransaction.from || "", onChange: handleInputChange, className: "p-2 border rounded", required: true, children: [
+          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("option", { value: "", children: "Desde" }, void 0, false, {
+            fileName: "app/routes/optimizacion-divisas.tsx",
+            lineNumber: 149,
+            columnNumber: 13
+          }, this),
+          currencies.map((currency) => /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("option", { value: currency.code, children: [
+            currency.code,
+            " - ",
+            currency.name
+          ] }, currency.code, true, {
+            fileName: "app/routes/optimizacion-divisas.tsx",
+            lineNumber: 150,
+            columnNumber: 41
+          }, this))
         ] }, void 0, true, {
           fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 107,
-          columnNumber: 13
+          lineNumber: 148,
+          columnNumber: 11
         }, this),
-        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("input", { type: "number", step: "0.0001", value: rate.rate, onChange: (e) => handleExchangeRateChange(index, e.target.value), className: "p-1 border rounded" }, void 0, false, {
+        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("select", { name: "to", value: currentTransaction.to || "", onChange: handleInputChange, className: "p-2 border rounded", required: true, children: [
+          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("option", { value: "", children: "Hasta" }, void 0, false, {
+            fileName: "app/routes/optimizacion-divisas.tsx",
+            lineNumber: 153,
+            columnNumber: 13
+          }, this),
+          currencies.map((currency) => /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("option", { value: currency.code, children: [
+            currency.code,
+            " - ",
+            currency.name
+          ] }, currency.code, true, {
+            fileName: "app/routes/optimizacion-divisas.tsx",
+            lineNumber: 154,
+            columnNumber: 41
+          }, this))
+        ] }, void 0, true, {
           fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 108,
-          columnNumber: 13
+          lineNumber: 152,
+          columnNumber: 11
         }, this)
-      ] }, index, true, {
+      ] }, void 0, true, {
         fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 106,
-        columnNumber: 45
-      }, this)),
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("button", { type: "submit", className: "mt-4 p-2 bg-green-500 text-white rounded", children: "Calcular Rutas \xD3ptimas" }, void 0, false, {
+        lineNumber: 147,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("input", { type: "number", name: "amount", value: currentTransaction.amount || "", onChange: handleInputChange, placeholder: "Monto", className: "p-2 border rounded w-full", required: true }, void 0, false, {
         fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 110,
+        lineNumber: 157,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("input", { type: "text", name: "name", value: currentTransaction.name || "", onChange: handleInputChange, placeholder: "Nombre de la transacci\xF3n", className: "p-2 border rounded w-full", required: true }, void 0, false, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 158,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("button", { type: "submit", className: "bg-green-500 text-white p-2 rounded hover:bg-green-600 transition", children: "Agregar Transacci\xF3n" }, void 0, false, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 159,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "app/routes/optimizacion-divisas.tsx",
-      lineNumber: 105,
+      lineNumber: 146,
       columnNumber: 7
     }, this),
-    actionData?.result && /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "mt-4", children: [
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("h2", { className: "text-xl font-bold mb-2", children: "Resultados" }, void 0, false, {
+    transactions.length > 0 && /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "mb-8", children: [
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("h2", { className: "text-2xl font-bold mb-4", children: "Transacciones Agregadas" }, void 0, false, {
         fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 116,
+        lineNumber: 165,
         columnNumber: 11
       }, this),
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "overflow-x-auto", children: /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("table", { className: "min-w-full bg-white", children: [
-        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("thead", { children: /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("tr", { children: [
-          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("th", { className: "px-4 py-2", children: "Desde" }, void 0, false, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 121,
-            columnNumber: 19
-          }, this),
-          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("th", { className: "px-4 py-2", children: "Hasta" }, void 0, false, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 122,
-            columnNumber: 19
-          }, this),
-          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("th", { className: "px-4 py-2", children: "Tasa" }, void 0, false, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 123,
-            columnNumber: 19
-          }, this),
-          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("th", { className: "px-4 py-2", children: "Ruta" }, void 0, false, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 124,
-            columnNumber: 19
-          }, this)
-        ] }, void 0, true, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 120,
-          columnNumber: 17
-        }, this) }, void 0, false, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 119,
-          columnNumber: 15
-        }, this),
-        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("tbody", { children: actionData.result.map((item, index) => /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("tr", { className: index % 2 === 0 ? "bg-gray-100" : "", children: [
-          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("td", { className: "border px-4 py-2", children: item.from }, void 0, false, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 129,
-            columnNumber: 21
-          }, this),
-          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("td", { className: "border px-4 py-2", children: item.to }, void 0, false, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 130,
-            columnNumber: 21
-          }, this),
-          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("td", { className: "border px-4 py-2", children: item.rate.toFixed(4) }, void 0, false, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 131,
-            columnNumber: 21
-          }, this),
-          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("td", { className: "border px-4 py-2", children: item.path.join(" \u2192 ") }, void 0, false, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 132,
-            columnNumber: 21
-          }, this)
-        ] }, index, true, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 128,
-          columnNumber: 57
-        }, this)) }, void 0, false, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 127,
-          columnNumber: 15
-        }, this)
-      ] }, void 0, true, {
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("ul", { children: transactions.map((t, index) => /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("li", { children: [
+        t.name,
+        ": ",
+        t.amount,
+        " ",
+        t.from,
+        " a ",
+        t.to
+      ] }, index, true, {
         fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 118,
-        columnNumber: 13
-      }, this) }, void 0, false, {
+        lineNumber: 167,
+        columnNumber: 45
+      }, this)) }, void 0, false, {
         fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 117,
-        columnNumber: 11
-      }, this),
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("button", { onClick: handleExport, className: "mt-4 p-2 bg-yellow-500 text-white rounded", children: "Exportar a Excel" }, void 0, false, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 137,
+        lineNumber: 166,
         columnNumber: 11
       }, this)
     ] }, void 0, true, {
       fileName: "app/routes/optimizacion-divisas.tsx",
-      lineNumber: 115,
+      lineNumber: 164,
+      columnNumber: 35
+    }, this),
+    /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("button", { onClick: handleCalculateOptimalRoutes, className: "bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition mb-8", children: "Calcular Rutas \xD3ptimas" }, void 0, false, {
+      fileName: "app/routes/optimizacion-divisas.tsx",
+      lineNumber: 171,
+      columnNumber: 7
+    }, this),
+    actionData?.result && /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "mt-8", children: [
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("h2", { className: "text-2xl font-bold mb-4", children: "Resultados" }, void 0, false, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 176,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("ul", { children: actionData.result.map((r, index) => /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("li", { children: [
+        r.from,
+        " a ",
+        r.to,
+        ": Tasa = ",
+        r.rate.toFixed(4),
+        ", Ruta: ",
+        r.path.join(" -> ")
+      ] }, index, true, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 178,
+        columnNumber: 50
+      }, this)) }, void 0, false, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 177,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("button", { onClick: handleExport, className: "mt-4 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition", children: "Exportar a Excel" }, void 0, false, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 180,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "app/routes/optimizacion-divisas.tsx",
+      lineNumber: 175,
       columnNumber: 30
     }, this)
   ] }, void 0, true, {
     fileName: "app/routes/optimizacion-divisas.tsx",
-    lineNumber: 80,
+    lineNumber: 134,
     columnNumber: 10
   }, this);
 }
-_s(OptimizacionDivisas, "1+CcnKULLIfALK1xzI/aLjHYNVs=", false, function() {
+_s(OptimizacionDivisas, "jdBjhyJ0OrnuKl445l2rv25UBSM=", false, function() {
   return [useActionData, useLoaderData, useSubmit];
 });
 _c = OptimizacionDivisas;
@@ -480,4 +463,4 @@ window.$RefreshSig$ = prevRefreshSig;
 export {
   OptimizacionDivisas as default
 };
-//# sourceMappingURL=/build/routes/optimizacion-divisas-GMRGDF23.js.map
+//# sourceMappingURL=/build/routes/optimizacion-divisas-YKSZT3HY.js.map

@@ -1,7 +1,11 @@
-export interface ExchangeRate {
+export interface Transaction {
+  name: string;
+  description?: string;
   from: string;
   to: string;
-  rate: number;
+  amount: number;
+  emitter?: string;
+  recipient?: string;
 }
 
 export interface ConversionResult {
@@ -11,19 +15,22 @@ export interface ConversionResult {
   path: string[];
 }
 
-export function floydWarshallAlgorithm(exchangeRates: ExchangeRate[]): ConversionResult[] {
-    const currencies = Array.from(new Set(exchangeRates.flatMap(rate => [rate.from, rate.to])));
+export function floydWarshallAlgorithm(transactions: Transaction[], exchangeRates: Record<string, number>): ConversionResult[] {
+    const currencies = Array.from(new Set(transactions.flatMap(t => [t.from, t.to])));
     const n = currencies.length;
     const dist: number[][] = Array(n).fill(null).map(() => Array(n).fill(Infinity));
     const next: number[][] = Array(n).fill(null).map(() => Array(n).fill(null));
 
     // Initialize distances and next pointers
     currencies.forEach((c, i) => dist[i][i] = 0);
-    exchangeRates.forEach(rate => {
-        const i = currencies.indexOf(rate.from);
-        const j = currencies.indexOf(rate.to);
-        dist[i][j] = -Math.log(rate.rate);
-        next[i][j] = j;
+    currencies.forEach((from, i) => {
+        currencies.forEach((to, j) => {
+            if (from !== to) {
+                const rate = exchangeRates[to] / exchangeRates[from];
+                dist[i][j] = -Math.log(rate);
+                next[i][j] = j;
+            }
+        });
     });
 
     // Floyd-Warshall algorithm

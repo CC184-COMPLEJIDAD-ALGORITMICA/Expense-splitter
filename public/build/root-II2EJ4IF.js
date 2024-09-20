@@ -36,7 +36,7 @@ var require_auth = __commonJS({
 var import_node = __toESM(require_node(), 1);
 
 // app/styles/tailwind.css
-var tailwind_default = "/build/_assets/tailwind-FPXYDJ2F.css";
+var tailwind_default = "/build/_assets/tailwind-ALTTEKCZ.css";
 
 // app/root.tsx
 var import_auth = __toESM(require_auth(), 1);
@@ -60,7 +60,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\components\\Nav.tsx"
   );
-  import.meta.hot.lastModified = "1726795836747.2976";
+  import.meta.hot.lastModified = "1726800926434.5134";
 }
 function Nav({
   user
@@ -240,4 +240,4 @@ export {
   links,
   meta
 };
-//# sourceMappingURL=/build/root-K5QLY7JF.js.map
+//# sourceMappingURL=/build/root-II2EJ4IF.js.map

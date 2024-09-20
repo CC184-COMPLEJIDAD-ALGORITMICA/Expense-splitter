@@ -139,7 +139,7 @@ import {
 } from "@remix-run/react";
 
 // app/styles/tailwind.css
-var tailwind_default = "/build/_assets/tailwind-FPXYDJ2F.css";
+var tailwind_default = "/build/_assets/tailwind-ALTTEKCZ.css";
 
 // app/auth.server.ts
 import { createCookieSessionStorage, redirect } from "@remix-run/node";
@@ -539,15 +539,19 @@ __export(optimizacion_divisas_exports, {
   loader: () => loader2
 });
 import { useState as useState2, useEffect } from "react";
-import { Form as Form2, useActionData as useActionData2, useSubmit as useSubmit2, useLoaderData as useLoaderData2 } from "@remix-run/react";
+import { useActionData as useActionData2, useSubmit as useSubmit2, useLoaderData as useLoaderData2 } from "@remix-run/react";
 import { json as json3 } from "@remix-run/node";
 
 // app/utils/floydWarshallAlgorithm.ts
-function floydWarshallAlgorithm(exchangeRates) {
-  let currencies = Array.from(new Set(exchangeRates.flatMap((rate) => [rate.from, rate.to]))), n = currencies.length, dist = Array(n).fill(null).map(() => Array(n).fill(1 / 0)), next = Array(n).fill(null).map(() => Array(n).fill(null));
-  currencies.forEach((c, i) => dist[i][i] = 0), exchangeRates.forEach((rate) => {
-    let i = currencies.indexOf(rate.from), j = currencies.indexOf(rate.to);
-    dist[i][j] = -Math.log(rate.rate), next[i][j] = j;
+function floydWarshallAlgorithm(transactions, exchangeRates) {
+  let currencies = Array.from(new Set(transactions.flatMap((t) => [t.from, t.to]))), n = currencies.length, dist = Array(n).fill(null).map(() => Array(n).fill(1 / 0)), next = Array(n).fill(null).map(() => Array(n).fill(null));
+  currencies.forEach((c, i) => dist[i][i] = 0), currencies.forEach((from, i) => {
+    currencies.forEach((to, j) => {
+      if (from !== to) {
+        let rate = exchangeRates[to] / exchangeRates[from];
+        dist[i][j] = -Math.log(rate), next[i][j] = j;
+      }
+    });
   });
   for (let k = 0; k < n; k++)
     for (let i = 0; i < n; i++)
@@ -557,12 +561,12 @@ function floydWarshallAlgorithm(exchangeRates) {
   for (let i = 0; i < n; i++)
     for (let j = 0; j < n; j++)
       if (i !== j && isFinite(dist[i][j])) {
-        let path = reconstructPath(next, i, j, currencies);
+        let path2 = reconstructPath(next, i, j, currencies);
         results.push({
           from: currencies[i],
           to: currencies[j],
           rate: Math.exp(-dist[i][j]),
-          path
+          path: path2
         });
       }
   return results;
@@ -570,10 +574,10 @@ function floydWarshallAlgorithm(exchangeRates) {
 function reconstructPath(next, start, end, currencies) {
   if (next[start][end] === null)
     return [];
-  let path = [currencies[start]];
+  let path2 = [currencies[start]];
   for (; start !== end; )
-    start = next[start][end], path.push(currencies[start]);
-  return path;
+    start = next[start][end], path2.push(currencies[start]);
+  return path2;
 }
 
 // app/types/currencies.ts
@@ -743,272 +747,325 @@ var currencieslist = [
 ];
 
 // app/utils/currencyUtils.ts
-async function getDollarValue() {
-  let apiUrl = process.env.API_URL;
-  if (!apiUrl)
-    throw new Error("API_URL is not defined");
-  return (await (await fetch(apiUrl)).json()).conversion_rates.USD;
+import fs from "fs";
+import path from "path";
+var RATES_FILE = path.join(process.cwd(), "app", "data", "exchange_rates.json"), ONE_DAY = 24 * 60 * 60 * 1e3;
+async function getExchangeRates() {
+  try {
+    let apiUrl = process.env.API_URL;
+    if (!apiUrl)
+      throw new Error("API_URL is not defined in environment variables");
+    let response = await fetch(apiUrl);
+    if (!response.ok)
+      throw new Error(`HTTP error! status: ${response.status}`);
+    let data = await response.json();
+    if (!data.conversion_rates)
+      throw console.error("Unexpected API response:", data), new Error("Unexpected API response format");
+    return console.log("Exchange rates fetched from API"), { rates: data.conversion_rates, fromApi: !0 };
+  } catch (error) {
+    return console.error("Error fetching exchange rates:", error), {
+      rates: {
+        USD: 1,
+        EUR: 0.85,
+        GBP: 0.75,
+        JPY: 110
+        // Añade más tasas de cambio de respaldo según sea necesario
+      },
+      fromApi: !1
+    };
+  }
 }
 
 // app/routes/optimizacion-divisas.tsx
 import { jsxDEV as jsxDEV5 } from "react/jsx-dev-runtime";
 var loader2 = async () => {
-  let dollarValue = await getDollarValue();
-  return json3({ dollarValue });
+  try {
+    let { rates, fromApi } = await getExchangeRates();
+    return json3({ exchangeRates: rates, fromApi, error: null });
+  } catch (error) {
+    return console.error("Error loading exchange rates:", error), json3({
+      exchangeRates: null,
+      fromApi: !1,
+      error: "Failed to load exchange rates. Please try again."
+    }, { status: 500 });
+  }
 }, action2 = async ({ request }) => {
-  let formData = await request.formData(), exchangeRates = JSON.parse(formData.get("exchangeRates")), result = floydWarshallAlgorithm(exchangeRates);
-  return json3({ result });
+  try {
+    let formData = await request.formData(), transactions = JSON.parse(formData.get("transactions")), { rates, fromApi } = await getExchangeRates();
+    console.log("Exchange rates:", rates);
+    let result = floydWarshallAlgorithm(transactions, rates);
+    return console.log("Floyd-Warshall result:", result), json3({ result, exchangeRates: rates, fromApi });
+  } catch (error) {
+    return console.error("Error calculating optimal routes:", error), json3({ error: "Failed to calculate optimal routes. Please try again." }, { status: 500 });
+  }
 };
 function OptimizacionDivisas() {
-  let actionData = useActionData2(), loaderData = useLoaderData2(), submit = useSubmit2(), [currencies, setCurrencies] = useState2(currencieslist), [exchangeRates, setExchangeRates] = useState2([]), [showTutorial, setShowTutorial] = useState2(!1);
+  let actionData = useActionData2(), loaderData = useLoaderData2(), submit = useSubmit2(), [currencies] = useState2(currencieslist), [transactions, setTransactions] = useState2([]), [currentTransaction, setCurrentTransaction] = useState2({}), [error, setError] = useState2(null);
   useEffect(() => {
-    let initialRates = currencies.map((currency) => ({
-      from: "USD",
-      to: currency.code,
-      rate: currency.code === "USD" ? 1 : 0
-    }));
-    setExchangeRates(initialRates);
-  }, []);
-  let handleSubmit = (event) => {
-    event.preventDefault(), submit({ exchangeRates: JSON.stringify(exchangeRates) }, { method: "post" });
-  }, handleExchangeRateChange = (index, value) => {
-    let newRates = [...exchangeRates];
-    newRates[index].rate = parseFloat(value), setExchangeRates(newRates);
+    loaderData.error ? setError(loaderData.error) : setError(null);
+  }, [loaderData]), useEffect(() => {
+    actionData?.error ? setError(actionData.error) : actionData?.result && setError(null);
+  }, [actionData]);
+  let handleInputChange = (e) => {
+    let { name, value } = e.target;
+    setCurrentTransaction((prev) => ({ ...prev, [name]: value }));
+  }, handleAddTransaction = (e) => {
+    e.preventDefault(), currentTransaction.from && currentTransaction.to && currentTransaction.amount && currentTransaction.name && (setTransactions((prev) => [...prev, currentTransaction]), setCurrentTransaction({}));
+  }, handleCalculateOptimalRoutes = () => {
+    transactions.length > 0 ? submit({ transactions: JSON.stringify(transactions) }, { method: "post" }) : setError("Please add at least one transaction before calculating optimal routes.");
   }, handleExport = () => {
     actionData?.result && exportToExcel(actionData.result, "Optimizacion_Divisas");
   };
-  return /* @__PURE__ */ jsxDEV5("div", { className: "container mx-auto p-4", children: [
-    /* @__PURE__ */ jsxDEV5("h1", { className: "text-2xl font-bold mb-4", children: "Optimizaci\xF3n de Rutas de Conversi\xF3n de Divisas" }, void 0, !1, {
+  return /* @__PURE__ */ jsxDEV5("div", { className: "container mx-auto p-4 max-w-4xl", children: [
+    /* @__PURE__ */ jsxDEV5("h1", { className: "text-4xl font-bold mb-8 text-center text-blue-600", children: "Optimizaci\xF3n de Rutas de Conversi\xF3n de Divisas" }, void 0, !1, {
       fileName: "app/routes/optimizacion-divisas.tsx",
-      lineNumber: 58,
+      lineNumber: 95,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ jsxDEV5("p", { className: "mb-4", children: [
-      "Valor actual del d\xF3lar: ",
-      loaderData.dollarValue
+    error && /* @__PURE__ */ jsxDEV5("div", { className: "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4", role: "alert", children: [
+      /* @__PURE__ */ jsxDEV5("strong", { className: "font-bold", children: "Error:" }, void 0, !1, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 99,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV5("span", { className: "block sm:inline", children: [
+        " ",
+        error
+      ] }, void 0, !0, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 100,
+        columnNumber: 11
+      }, this)
     ] }, void 0, !0, {
       fileName: "app/routes/optimizacion-divisas.tsx",
-      lineNumber: 59,
+      lineNumber: 98,
+      columnNumber: 9
+    }, this),
+    (loaderData.fromApi || actionData?.fromApi) && /* @__PURE__ */ jsxDEV5("div", { className: "bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4", role: "alert", children: /* @__PURE__ */ jsxDEV5("span", { className: "block sm:inline", children: "Tasas de cambio obtenidas exitosamente de la API." }, void 0, !1, {
+      fileName: "app/routes/optimizacion-divisas.tsx",
+      lineNumber: 106,
+      columnNumber: 11
+    }, this) }, void 0, !1, {
+      fileName: "app/routes/optimizacion-divisas.tsx",
+      lineNumber: 105,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV5("form", { onSubmit: handleAddTransaction, className: "space-y-4 mb-8", children: [
+      /* @__PURE__ */ jsxDEV5("div", { className: "grid grid-cols-2 gap-4", children: [
+        /* @__PURE__ */ jsxDEV5(
+          "select",
+          {
+            name: "from",
+            value: currentTransaction.from || "",
+            onChange: handleInputChange,
+            className: "p-2 border rounded",
+            required: !0,
+            children: [
+              /* @__PURE__ */ jsxDEV5("option", { value: "", children: "Desde" }, void 0, !1, {
+                fileName: "app/routes/optimizacion-divisas.tsx",
+                lineNumber: 119,
+                columnNumber: 13
+              }, this),
+              currencies.map((currency) => /* @__PURE__ */ jsxDEV5("option", { value: currency.code, children: [
+                currency.code,
+                " - ",
+                currency.name
+              ] }, currency.code, !0, {
+                fileName: "app/routes/optimizacion-divisas.tsx",
+                lineNumber: 121,
+                columnNumber: 15
+              }, this))
+            ]
+          },
+          void 0,
+          !0,
+          {
+            fileName: "app/routes/optimizacion-divisas.tsx",
+            lineNumber: 112,
+            columnNumber: 11
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV5(
+          "select",
+          {
+            name: "to",
+            value: currentTransaction.to || "",
+            onChange: handleInputChange,
+            className: "p-2 border rounded",
+            required: !0,
+            children: [
+              /* @__PURE__ */ jsxDEV5("option", { value: "", children: "Hasta" }, void 0, !1, {
+                fileName: "app/routes/optimizacion-divisas.tsx",
+                lineNumber: 131,
+                columnNumber: 13
+              }, this),
+              currencies.map((currency) => /* @__PURE__ */ jsxDEV5("option", { value: currency.code, children: [
+                currency.code,
+                " - ",
+                currency.name
+              ] }, currency.code, !0, {
+                fileName: "app/routes/optimizacion-divisas.tsx",
+                lineNumber: 133,
+                columnNumber: 15
+              }, this))
+            ]
+          },
+          void 0,
+          !0,
+          {
+            fileName: "app/routes/optimizacion-divisas.tsx",
+            lineNumber: 124,
+            columnNumber: 11
+          },
+          this
+        )
+      ] }, void 0, !0, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 111,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV5(
+        "input",
+        {
+          type: "number",
+          name: "amount",
+          value: currentTransaction.amount || "",
+          onChange: handleInputChange,
+          placeholder: "Monto",
+          className: "p-2 border rounded w-full",
+          required: !0
+        },
+        void 0,
+        !1,
+        {
+          fileName: "app/routes/optimizacion-divisas.tsx",
+          lineNumber: 137,
+          columnNumber: 9
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV5(
+        "input",
+        {
+          type: "text",
+          name: "name",
+          value: currentTransaction.name || "",
+          onChange: handleInputChange,
+          placeholder: "Nombre de la transacci\xF3n",
+          className: "p-2 border rounded w-full",
+          required: !0
+        },
+        void 0,
+        !1,
+        {
+          fileName: "app/routes/optimizacion-divisas.tsx",
+          lineNumber: 146,
+          columnNumber: 9
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV5("button", { type: "submit", className: "bg-green-500 text-white p-2 rounded hover:bg-green-600 transition", children: "Agregar Transacci\xF3n" }, void 0, !1, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 155,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, !0, {
+      fileName: "app/routes/optimizacion-divisas.tsx",
+      lineNumber: 110,
       columnNumber: 7
+    }, this),
+    transactions.length > 0 && /* @__PURE__ */ jsxDEV5("div", { className: "mb-8", children: [
+      /* @__PURE__ */ jsxDEV5("h2", { className: "text-2xl font-bold mb-4", children: "Transacciones Agregadas" }, void 0, !1, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 162,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV5("ul", { children: transactions.map((t, index) => /* @__PURE__ */ jsxDEV5("li", { children: [
+        t.name,
+        ": ",
+        t.amount,
+        " ",
+        t.from,
+        " a ",
+        t.to
+      ] }, index, !0, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 165,
+        columnNumber: 15
+      }, this)) }, void 0, !1, {
+        fileName: "app/routes/optimizacion-divisas.tsx",
+        lineNumber: 163,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, !0, {
+      fileName: "app/routes/optimizacion-divisas.tsx",
+      lineNumber: 161,
+      columnNumber: 9
     }, this),
     /* @__PURE__ */ jsxDEV5(
       "button",
       {
-        onClick: () => setShowTutorial(!showTutorial),
-        className: "mb-4 p-2 bg-blue-500 text-white rounded",
-        children: showTutorial ? "Ocultar Tutorial" : "Mostrar Tutorial"
+        onClick: handleCalculateOptimalRoutes,
+        className: "bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition mb-8",
+        children: "Calcular Rutas \xD3ptimas"
       },
       void 0,
       !1,
       {
         fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 61,
+        lineNumber: 171,
         columnNumber: 7
       },
       this
     ),
-    showTutorial && /* @__PURE__ */ jsxDEV5("div", { className: "mb-6 p-4 bg-gray-100 rounded", children: [
-      /* @__PURE__ */ jsxDEV5("h2", { className: "text-xl font-bold mb-2", children: "Tutorial y Ejemplos" }, void 0, !1, {
+    actionData?.result && /* @__PURE__ */ jsxDEV5("div", { className: "mt-8", children: [
+      /* @__PURE__ */ jsxDEV5("h2", { className: "text-2xl font-bold mb-4", children: "Resultados" }, void 0, !1, {
         fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 70,
+        lineNumber: 180,
         columnNumber: 11
       }, this),
-      /* @__PURE__ */ jsxDEV5("p", { children: "El algoritmo de Floyd-Warshall se utiliza para encontrar las rutas m\xE1s eficientes de conversi\xF3n entre divisas. Esto es \xFAtil en varios escenarios reales:" }, void 0, !1, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 71,
-        columnNumber: 11
-      }, this),
-      /* @__PURE__ */ jsxDEV5("ul", { className: "list-disc list-inside mb-2", children: [
-        /* @__PURE__ */ jsxDEV5("li", { children: "Comercio internacional: Optimizar costos de conversi\xF3n en transacciones multinacionales." }, void 0, !1, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 73,
-          columnNumber: 13
-        }, this),
-        /* @__PURE__ */ jsxDEV5("li", { children: "Arbitraje de divisas: Identificar oportunidades de beneficio en el mercado FOREX." }, void 0, !1, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 74,
-          columnNumber: 13
-        }, this),
-        /* @__PURE__ */ jsxDEV5("li", { children: "Gesti\xF3n de tesorer\xEDa: Minimizar p\xE9rdidas en conversiones para empresas multinacionales." }, void 0, !1, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 75,
-          columnNumber: 13
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 72,
-        columnNumber: 11
-      }, this),
-      /* @__PURE__ */ jsxDEV5("p", { children: "El algoritmo funciona construyendo una matriz de todas las posibles conversiones y encontrando el camino m\xE1s corto (o en este caso, la conversi\xF3n m\xE1s favorable) entre cada par de divisas." }, void 0, !1, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 77,
-        columnNumber: 11
-      }, this),
-      /* @__PURE__ */ jsxDEV5("p", { children: "Es ideal porque:" }, void 0, !1, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 78,
-        columnNumber: 11
-      }, this),
-      /* @__PURE__ */ jsxDEV5("ul", { className: "list-disc list-inside", children: [
-        /* @__PURE__ */ jsxDEV5("li", { children: "Considera todas las posibles rutas de conversi\xF3n indirectas." }, void 0, !1, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 80,
-          columnNumber: 13
-        }, this),
-        /* @__PURE__ */ jsxDEV5("li", { children: "Tiene una complejidad de O(n\xB3), eficiente para un n\xFAmero moderado de divisas." }, void 0, !1, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 81,
-          columnNumber: 13
-        }, this),
-        /* @__PURE__ */ jsxDEV5("li", { children: "Proporciona resultados para todas las parejas de divisas en una sola ejecuci\xF3n." }, void 0, !1, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 82,
-          columnNumber: 13
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 79,
-        columnNumber: 11
-      }, this)
-    ] }, void 0, !0, {
-      fileName: "app/routes/optimizacion-divisas.tsx",
-      lineNumber: 69,
-      columnNumber: 9
-    }, this),
-    /* @__PURE__ */ jsxDEV5(Form2, { method: "post", onSubmit: handleSubmit, children: [
-      exchangeRates.map((rate, index) => /* @__PURE__ */ jsxDEV5("div", { className: "mb-2", children: [
-        /* @__PURE__ */ jsxDEV5("span", { className: "mr-2", children: [
-          rate.from,
-          " a ",
-          rate.to,
-          ":"
-        ] }, void 0, !0, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 90,
-          columnNumber: 13
-        }, this),
-        /* @__PURE__ */ jsxDEV5(
-          "input",
-          {
-            type: "number",
-            step: "0.0001",
-            value: rate.rate,
-            onChange: (e) => handleExchangeRateChange(index, e.target.value),
-            className: "p-1 border rounded"
-          },
-          void 0,
-          !1,
-          {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 91,
-            columnNumber: 13
-          },
-          this
-        )
+      /* @__PURE__ */ jsxDEV5("ul", { children: actionData.result.map((r, index) => /* @__PURE__ */ jsxDEV5("li", { children: [
+        r.from,
+        " a ",
+        r.to,
+        ": Tasa = ",
+        r.rate.toFixed(4),
+        ", Ruta: ",
+        r.path.join(" -> ")
       ] }, index, !0, {
         fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 89,
-        columnNumber: 11
-      }, this)),
-      /* @__PURE__ */ jsxDEV5("button", { type: "submit", className: "mt-4 p-2 bg-green-500 text-white rounded", children: "Calcular Rutas \xD3ptimas" }, void 0, !1, {
+        lineNumber: 183,
+        columnNumber: 15
+      }, this)) }, void 0, !1, {
         fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 100,
-        columnNumber: 9
-      }, this)
-    ] }, void 0, !0, {
-      fileName: "app/routes/optimizacion-divisas.tsx",
-      lineNumber: 87,
-      columnNumber: 7
-    }, this),
-    actionData?.result && /* @__PURE__ */ jsxDEV5("div", { className: "mt-4", children: [
-      /* @__PURE__ */ jsxDEV5("h2", { className: "text-xl font-bold mb-2", children: "Resultados" }, void 0, !1, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 107,
+        lineNumber: 181,
         columnNumber: 11
       }, this),
-      /* @__PURE__ */ jsxDEV5("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxDEV5("table", { className: "min-w-full bg-white", children: [
-        /* @__PURE__ */ jsxDEV5("thead", { children: /* @__PURE__ */ jsxDEV5("tr", { children: [
-          /* @__PURE__ */ jsxDEV5("th", { className: "px-4 py-2", children: "Desde" }, void 0, !1, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 112,
-            columnNumber: 19
-          }, this),
-          /* @__PURE__ */ jsxDEV5("th", { className: "px-4 py-2", children: "Hasta" }, void 0, !1, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 113,
-            columnNumber: 19
-          }, this),
-          /* @__PURE__ */ jsxDEV5("th", { className: "px-4 py-2", children: "Tasa" }, void 0, !1, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 114,
-            columnNumber: 19
-          }, this),
-          /* @__PURE__ */ jsxDEV5("th", { className: "px-4 py-2", children: "Ruta" }, void 0, !1, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 115,
-            columnNumber: 19
-          }, this)
-        ] }, void 0, !0, {
+      /* @__PURE__ */ jsxDEV5(
+        "button",
+        {
+          onClick: handleExport,
+          className: "mt-4 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition",
+          children: "Exportar a Excel"
+        },
+        void 0,
+        !1,
+        {
           fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 111,
-          columnNumber: 17
-        }, this) }, void 0, !1, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 110,
-          columnNumber: 15
-        }, this),
-        /* @__PURE__ */ jsxDEV5("tbody", { children: actionData.result.map((item, index) => /* @__PURE__ */ jsxDEV5("tr", { className: index % 2 === 0 ? "bg-gray-100" : "", children: [
-          /* @__PURE__ */ jsxDEV5("td", { className: "border px-4 py-2", children: item.from }, void 0, !1, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 121,
-            columnNumber: 21
-          }, this),
-          /* @__PURE__ */ jsxDEV5("td", { className: "border px-4 py-2", children: item.to }, void 0, !1, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 122,
-            columnNumber: 21
-          }, this),
-          /* @__PURE__ */ jsxDEV5("td", { className: "border px-4 py-2", children: item.rate.toFixed(4) }, void 0, !1, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 123,
-            columnNumber: 21
-          }, this),
-          /* @__PURE__ */ jsxDEV5("td", { className: "border px-4 py-2", children: item.path.join(" \u2192 ") }, void 0, !1, {
-            fileName: "app/routes/optimizacion-divisas.tsx",
-            lineNumber: 124,
-            columnNumber: 21
-          }, this)
-        ] }, index, !0, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 120,
-          columnNumber: 19
-        }, this)) }, void 0, !1, {
-          fileName: "app/routes/optimizacion-divisas.tsx",
-          lineNumber: 118,
-          columnNumber: 15
-        }, this)
-      ] }, void 0, !0, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 109,
-        columnNumber: 13
-      }, this) }, void 0, !1, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 108,
-        columnNumber: 11
-      }, this),
-      /* @__PURE__ */ jsxDEV5("button", { onClick: handleExport, className: "mt-4 p-2 bg-yellow-500 text-white rounded", children: "Exportar a Excel" }, void 0, !1, {
-        fileName: "app/routes/optimizacion-divisas.tsx",
-        lineNumber: 130,
-        columnNumber: 11
-      }, this)
+          lineNumber: 186,
+          columnNumber: 11
+        },
+        this
+      )
     ] }, void 0, !0, {
       fileName: "app/routes/optimizacion-divisas.tsx",
-      lineNumber: 106,
+      lineNumber: 179,
       columnNumber: 9
     }, this)
   ] }, void 0, !0, {
     fileName: "app/routes/optimizacion-divisas.tsx",
-    lineNumber: 57,
+    lineNumber: 94,
     columnNumber: 5
   }, this);
 }
@@ -2845,7 +2902,7 @@ function Login() {
 }
 
 // server-assets-manifest:@remix-run/dev/assets-manifest
-var assets_manifest_default = { entry: { module: "/build/entry.client-4BIYH5ID.js", imports: ["/build/_shared/chunk-O4BRYNJ4.js", "/build/_shared/chunk-SNZIFTKA.js", "/build/_shared/chunk-KHA4OLT4.js", "/build/_shared/chunk-UWV35TSL.js", "/build/_shared/chunk-U4FRFQSK.js", "/build/_shared/chunk-XGOTYLZ5.js", "/build/_shared/chunk-7M6SC7J5.js", "/build/_shared/chunk-PNG5AS42.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-K5QLY7JF.js", imports: ["/build/_shared/chunk-G7CHZRZX.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/_index": { id: "routes/_index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/_index-GHR6GA6X.js", imports: ["/build/_shared/chunk-E7TNPIXH.js", "/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/login": { id: "routes/login", parentId: "root", path: "login", index: void 0, caseSensitive: void 0, module: "/build/routes/login-4DDJMFTN.js", imports: ["/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/logout": { id: "routes/logout", parentId: "root", path: "logout", index: void 0, caseSensitive: void 0, module: "/build/routes/logout-GGSXPJWV.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/minimizacion-transacciones": { id: "routes/minimizacion-transacciones", parentId: "root", path: "minimizacion-transacciones", index: void 0, caseSensitive: void 0, module: "/build/routes/minimizacion-transacciones-SGG3RTR7.js", imports: ["/build/_shared/chunk-FUJQJE3X.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/optimizacion-divisas": { id: "routes/optimizacion-divisas", parentId: "root", path: "optimizacion-divisas", index: void 0, caseSensitive: void 0, module: "/build/routes/optimizacion-divisas-GMRGDF23.js", imports: ["/build/_shared/chunk-FUJQJE3X.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/register": { id: "routes/register", parentId: "root", path: "register", index: void 0, caseSensitive: void 0, module: "/build/routes/register-SCMYMTNU.js", imports: ["/build/_shared/chunk-E7TNPIXH.js", "/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "5424f6ce", hmr: { runtime: "/build/_shared\\chunk-KHA4OLT4.js", timestamp: 1726797797420 }, url: "/build/manifest-5424F6CE.js" };
+var assets_manifest_default = { entry: { module: "/build/entry.client-4BIYH5ID.js", imports: ["/build/_shared/chunk-O4BRYNJ4.js", "/build/_shared/chunk-SNZIFTKA.js", "/build/_shared/chunk-KHA4OLT4.js", "/build/_shared/chunk-UWV35TSL.js", "/build/_shared/chunk-U4FRFQSK.js", "/build/_shared/chunk-XGOTYLZ5.js", "/build/_shared/chunk-7M6SC7J5.js", "/build/_shared/chunk-PNG5AS42.js"] }, routes: { root: { id: "root", parentId: void 0, path: "", index: void 0, caseSensitive: void 0, module: "/build/root-II2EJ4IF.js", imports: ["/build/_shared/chunk-G7CHZRZX.js"], hasAction: !1, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/_index": { id: "routes/_index", parentId: "root", path: void 0, index: !0, caseSensitive: void 0, module: "/build/routes/_index-GHR6GA6X.js", imports: ["/build/_shared/chunk-E7TNPIXH.js", "/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/login": { id: "routes/login", parentId: "root", path: "login", index: void 0, caseSensitive: void 0, module: "/build/routes/login-4DDJMFTN.js", imports: ["/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/logout": { id: "routes/logout", parentId: "root", path: "logout", index: void 0, caseSensitive: void 0, module: "/build/routes/logout-GGSXPJWV.js", imports: void 0, hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/minimizacion-transacciones": { id: "routes/minimizacion-transacciones", parentId: "root", path: "minimizacion-transacciones", index: void 0, caseSensitive: void 0, module: "/build/routes/minimizacion-transacciones-QI4P57CO.js", imports: ["/build/_shared/chunk-VS4ZVN4Y.js"], hasAction: !0, hasLoader: !1, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/optimizacion-divisas": { id: "routes/optimizacion-divisas", parentId: "root", path: "optimizacion-divisas", index: void 0, caseSensitive: void 0, module: "/build/routes/optimizacion-divisas-YKSZT3HY.js", imports: ["/build/_shared/chunk-VS4ZVN4Y.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 }, "routes/register": { id: "routes/register", parentId: "root", path: "register", index: void 0, caseSensitive: void 0, module: "/build/routes/register-SCMYMTNU.js", imports: ["/build/_shared/chunk-E7TNPIXH.js", "/build/_shared/chunk-IL7AJ3GD.js"], hasAction: !0, hasLoader: !0, hasClientAction: !1, hasClientLoader: !1, hasErrorBoundary: !1 } }, version: "7cdd6e67", hmr: { runtime: "/build/_shared\\chunk-KHA4OLT4.js", timestamp: 1726811540955 }, url: "/build/manifest-7CDD6E67.js" };
 
 // server-entry-module:@remix-run/dev/server-build
 var mode = "development", assetsBuildDirectory = "public\\build", future = { v3_fetcherPersist: !1, v3_relativeSplatPath: !1, v3_throwAbortReason: !1, unstable_singleFetch: !1, unstable_lazyRouteDiscovery: !1, unstable_optimizeDeps: !1 }, publicPath = "/build/", entry = { module: entry_server_exports }, routes = {
