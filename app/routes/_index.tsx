@@ -10,6 +10,8 @@ import { addLocalExpense, addJuntaExpense, deleteExpense } from "~/actions/expen
 import { createJunta, clearJunta, inviteToJunta } from "~/actions/juntas.server";
 import { respondToInvitation, getInvitations } from "~/utils/invitations";
 import { NotificationInbox } from "~/components/NotificationInbox";
+import { floydWarshall } from '~/utils/floydWarshall';
+import { primAlgorithm } from '~/utils/primAlgorithm';
 
 type ActionData = {
   success: boolean;
@@ -148,19 +150,35 @@ export default function Index() {
 
   const [splitType, setSplitType] = useState<'equal' | 'individual'>('equal');
 
+  const [algorithmExplanation, setAlgorithmExplanation] = useState<string>('');
+
   const handleCalculateSplits = useCallback(() => {
     if (selectedJunta) {
       const calculatedSplits = splitType === 'equal' 
         ? calculateEqualSplits(selectedJunta.expenses, selectedJunta.members)
         : calculateIndividualSplits(selectedJunta.expenses, selectedJunta.members);
       setSplits(calculatedSplits);
+
+      // Explicación del algoritmo
+      if (splitType === 'equal') {
+        setAlgorithmExplanation(t.equalSplitExplanation);
+      } else {
+        setAlgorithmExplanation(t.individualSplitExplanation);
+      }
+
+      // Aplicar Floyd-Warshall para optimizar las transferencias
+      const optimizedSplits = floydWarshall(calculatedSplits);
+      setSplits(optimizedSplits);
+      setAlgorithmExplanation(prevExplanation => 
+        `${prevExplanation}\n\n${t.floydWarshallExplanation}`
+      );
     } else if (user) {
       const calculatedSplits = splitType === 'equal'
         ? calculateEqualSplits(localExpenses, [user])
         : calculateIndividualSplits(localExpenses, [user]);
       setSplits(calculatedSplits);
     }
-  }, [selectedJunta, localExpenses, user, splitType]);
+  }, [selectedJunta, localExpenses, user, splitType, t]);
 
   useEffect(() => {
     handleCalculateSplits();
@@ -628,6 +646,15 @@ export default function Index() {
               onInvitationResponse={handleInvitationResponse} 
             />
           )}
+
+          {algorithmExplanation && (
+            <div className="mt-4 bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-2">{t.algorithmExplanationTitle}</h3>
+              <p className="whitespace-pre-line">{algorithmExplanation}</p>
+            </div>
+          )}
+
+
         </>
       ) : (
         <div className="text-center">

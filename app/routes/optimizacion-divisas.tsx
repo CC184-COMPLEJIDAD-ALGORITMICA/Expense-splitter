@@ -4,6 +4,7 @@ import { json, ActionFunction } from '@remix-run/node';
 import { findBestConversionPath } from '../types/currencyExchange';
 import { ExchangeHouse, ConversionResult } from '../types/exchangeTypes';
 import { exportToExcel } from '../utils/excelExport';
+import { currencieslist } from '../types/currencies';
 
 export default function OptimizacionDivisas() {
   const [amount, setAmount] = useState<number>(1000);
@@ -49,7 +50,7 @@ export default function OptimizacionDivisas() {
           Rate: step.rate,
           Operation: step.isBuy ? 'Compra' : 'Venta'
         })),
-        { Step: 'Final', Amount: actionData.result.finalAmountInUSD, Currency: actionData.result.path[actionData.result.path.length - 1].to }
+        { Step: 'Final', Amount: actionData.result.finalAmount, Currency: actionData.result.finalCurrency }
       ];
       exportToExcel(data, 'OptimalConversionPath');
     }
@@ -58,6 +59,18 @@ export default function OptimizacionDivisas() {
   return (
     <div className="container mx-auto p-4 max-w-4xl bg-gray-100 rounded-lg shadow-lg">
       <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">Optimización de Conversión de Divisas</h1>
+
+      <div className="bg-white p-6 rounded-lg shadow mb-8">
+        <h2 className="text-2xl font-bold mb-4 text-blue-600">Tutorial</h2>
+        <p className="mb-4">Esta herramienta te ayuda a encontrar la ruta óptima para convertir divisas a través de diferentes casas de cambio, maximizando tus ganancias.</p>
+        <ol className="list-decimal list-inside space-y-2">
+          <li>Ingresa la cantidad inicial y la moneda con la que deseas comenzar.</li>
+          <li>Establece el número máximo de pasos (conversiones) permitidos.</li>
+          <li>Agrega las casas de cambio y sus tasas de conversión.</li>
+          <li>Decide si quieres permitir repeticiones de monedas en la ruta.</li>
+          <li>Haz clic en "Calcular ruta óptima" para obtener el mejor resultado.</li>
+        </ol>
+      </div>
 
       <Form onSubmit={handleSubmit} className="mb-8 space-y-6">
         <div className="grid grid-cols-2 gap-4">
@@ -74,14 +87,19 @@ export default function OptimizacionDivisas() {
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
             <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-2">Moneda inicial:</label>
-            <input
-              type="text"
+            <select
               id="currency"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
               className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            />
-            <p className="mt-2 text-sm text-gray-500">Ingrese el código de la moneda inicial (ej. USD, EUR, PEN).</p>
+            >
+              {currencieslist.map((curr) => (
+                <option key={curr.code} value={curr.code}>
+                  {curr.code} - {curr.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-sm text-gray-500">Seleccione la moneda inicial para la conversión.</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
@@ -128,9 +146,16 @@ export default function OptimizacionDivisas() {
       {actionData?.result && (
         <div className="mt-8 bg-white p-6 rounded-lg shadow">
           <h2 className="text-2xl font-bold mb-4 text-blue-600">Resultado Óptimo</h2>
-          <p className="text-lg">Ganancia: <span className={`font-bold ${actionData.result.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>${actionData.result.profit.toFixed(2)} USD</span> ({actionData.result.profitPercentage.toFixed(2)}%)</p>
-          <p className="text-lg">Cantidad inicial: ${actionData.result.initialAmount.toFixed(2)} {currency}</p>
-          <p className="text-lg">Cantidad final: ${actionData.result.finalAmountInUSD.toFixed(2)} USD</p>
+          <p className="text-lg">
+            Ganancia: <span className={`font-bold ${actionData.result.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {actionData.result.profit.toFixed(2)} {actionData.result.finalCurrency}
+            </span>
+          </p>
+          <p className="text-sm text-gray-600">
+            ({actionData.result.profitPercentage.toFixed(2)}% comparado con {actionData.result.initialAmount.toFixed(2)} {actionData.result.initialCurrency})
+          </p>
+          <p className="text-lg">Cantidad inicial: {actionData.result.initialAmount.toFixed(2)} {actionData.result.initialCurrency}</p>
+          <p className="text-lg">Cantidad final: {actionData.result.finalAmount.toFixed(2)} {actionData.result.finalCurrency}</p>
           <h3 className="text-xl font-bold mt-6 mb-2 text-blue-600">Pasos:</h3>
           {actionData.result.path.length > 0 ? (
             <ol className="list-decimal list-inside space-y-2">
@@ -159,6 +184,18 @@ export default function OptimizacionDivisas() {
           <button onClick={handleExportToExcel} className="mt-6 bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300">
             Exportar a Excel
           </button>
+
+          <div className="mt-6 bg-blue-100 p-4 rounded-lg">
+            <h3 className="text-xl font-bold mb-2 text-blue-600">Algoritmo Utilizado</h3>
+            <p>Para encontrar la ruta óptima de conversión, se utilizó el siguiente enfoque:</p>
+            <ul className="list-disc list-inside mt-2">
+              <li><strong>Búsqueda en Profundidad (DFS) con Backtracking:</strong> Se explora el espacio de soluciones utilizando una búsqueda en profundidad, construyendo rutas de conversión paso a paso.</li>
+              <li><strong>Poda (Pruning):</strong> Se descartan rutas parciales que exceden el número máximo de pasos o violan la restricción de repetición de monedas.</li>
+              <li><strong>Optimización Greedy:</strong> En cada paso, se selecciona la mejor conversión disponible basada en las tasas de cambio actuales.</li>
+            </ul>
+            <p className="mt-2">El algoritmo construye un árbol de decisiones, donde cada nodo representa una conversión de moneda. Se exploran todas las rutas posibles hasta el límite de pasos especificado, manteniendo un registro de la mejor ruta encontrada. La poda ayuda a reducir el espacio de búsqueda, mientras que la heurística greedy guía la exploración hacia soluciones potencialmente óptimas.</p>
+            <p className="mt-2">Complejidad: En el peor caso, la complejidad temporal es exponencial O(b^d), donde b es el factor de ramificación (número promedio de conversiones posibles en cada paso) y d es la profundidad máxima (número máximo de pasos). Sin embargo, las técnicas de poda y la heurística greedy ayudan a reducir significativamente el tiempo de ejecución en la práctica.</p>
+          </div>
         </div>
       )}
     </div>

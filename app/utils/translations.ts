@@ -63,6 +63,10 @@ export const translations = {
     generalSplitsIndividual: "Divisiones Generales (Basadas en Gastos Individuales)",
     invitationAccepted: "Invitación aceptada con éxito",
     operationFailed: "La operación falló o devolvió datos inesperados",
+    equalSplitExplanation: "Para el cálculo de divisiones iguales, se utilizó un algoritmo de Fuerza Bruta. Este método suma todos los gastos, divide el total entre el número de participantes y luego calcula las diferencias individuales.",
+    individualSplitExplanation: "Para el cálculo de divisiones individuales, se aplicó un algoritmo de Programación Dinámica. Este método optimiza las transferencias considerando los gastos individuales y las deudas acumuladas.",
+    floydWarshallExplanation: "Adicionalmente, se aplicó el algoritmo de Floyd-Warshall para optimizar las transferencias. Este algoritmo de grafos encuentra las rutas más cortas entre todos los pares de nodos, minimizando el número de transferencias necesarias.",
+    algorithmExplanationTitle: "Explicación del Algoritmo",
   },
   en: {
     title: "Expense Splitter",
@@ -128,5 +132,9 @@ export const translations = {
     generalSplitsIndividual: "General Splits (Based on Individual Expenses)",
     invitationAccepted: "Invitation accepted successfully",
     operationFailed: "The operation failed or returned unexpected data",
+    equalSplitExplanation: "For equal split calculations, a Brute Force algorithm was used. This method sums up all expenses, divides the total by the number of participants, and then calculates individual differences.",
+    individualSplitExplanation: "For individual split calculations, a Dynamic Programming algorithm was applied. This method optimizes transfers considering individual expenses and accumulated debts.",
+    floydWarshallExplanation: "Additionally, the Floyd-Warshall algorithm was applied to optimize transfers. This graph algorithm finds the shortest paths between all pairs of nodes, minimizing the number of necessary transfers.",
+    algorithmExplanationTitle: "Algorithm Explanation",
   }
 };

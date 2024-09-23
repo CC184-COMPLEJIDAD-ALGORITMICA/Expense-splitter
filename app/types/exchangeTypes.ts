@@ -22,7 +22,9 @@ export interface ConversionStep {
 
 export interface ConversionResult {
   initialAmount: number;
-  finalAmountInUSD: number;
+  initialCurrency: string;
+  finalAmount: number;
+  finalCurrency: string;
   profit: number;
   profitPercentage: number;
   path: ConversionStep[];

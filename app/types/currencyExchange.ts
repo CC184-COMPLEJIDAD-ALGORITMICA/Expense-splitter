@@ -96,7 +96,9 @@ function bellmanFord(graph: Graph, start: string, amount: number, maxSteps: numb
 
   return {
     initialAmount: amount,
-    finalAmountInUSD: finalAmount, // Assuming USD as the base currency
+    initialCurrency: start,
+    finalAmount: finalAmount,
+    finalCurrency: maxCurrency,
     profit,
     profitPercentage,
     path,
@@ -114,39 +116,37 @@ export function findBestConversionPath(
   const graph = buildGraph(exchangeHouses);
   const result = bellmanFord(graph, startCurrency, amount, maxSteps, allowRepetitions);
 
-  // If no valid path was found, return a result with default values
   if (result.path.length === 0) {
     return {
       initialAmount: amount,
-      finalAmountInUSD: amount, // Assuming the initial amount is in USD
+      initialCurrency: startCurrency,
+      finalAmount: amount,
+      finalCurrency: startCurrency,
       profit: 0,
       profitPercentage: 0,
       path: [],
-      allPaths: Object.keys(graph).map(currency => ({
-        currency,
-        profit: currency === startCurrency ? 0 : null,
-        profitPercentage: currency === startCurrency ? 0 : null
-      }))
+      allPaths: []
     };
   }
 
-  // Convert final amount to USD if it's not already
-  const finalCurrency = result.path[result.path.length - 1].to;
-  let finalAmountInUSD = result.finalAmountInUSD;
-  if (finalCurrency !== 'USD') {
-    const usdRate = findUSDRate(graph, finalCurrency);
-    finalAmountInUSD *= usdRate;
+  return result;
+}
+
+function convertAmount(graph: Graph, amount: number, fromCurrency: string, toCurrency: string): number {
+  if (fromCurrency === toCurrency) return amount;
+  
+  if (graph[fromCurrency] && graph[fromCurrency][toCurrency]) {
+    return amount * graph[fromCurrency][toCurrency].rate;
   }
-
-  const profit = finalAmountInUSD - amount;
-  const profitPercentage = (profit / amount) * 100;
-
-  return {
-    ...result,
-    finalAmountInUSD,
-    profit,
-    profitPercentage
-  };
+  
+  // Si no hay conversión directa, intentamos una conversión en dos pasos a través de USD
+  if (graph[fromCurrency] && graph[fromCurrency]['USD'] && graph['USD'] && graph['USD'][toCurrency]) {
+    const amountInUSD = amount * graph[fromCurrency]['USD'].rate;
+    return amountInUSD * graph['USD'][toCurrency].rate;
+  }
+  
+  console.warn(`No se pudo encontrar una tasa de conversión de ${fromCurrency} a ${toCurrency}.`);
+  return amount; // Retornamos el monto original si no se puede convertir
 }
 
 function findUSDRate(graph: Graph, currency: string): number {

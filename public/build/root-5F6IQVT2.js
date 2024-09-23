@@ -60,7 +60,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\components\\Nav.tsx"
   );
-  import.meta.hot.lastModified = "1726800926434.5134";
+  import.meta.hot.lastModified = "1727053743227.6204";
 }
 function Nav({
   user
@@ -81,12 +81,12 @@ function Nav({
         lineNumber: 32,
         columnNumber: 15
       }, this),
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(Link, { to: "/minimizacion-transacciones", className: "text-white mr-4", children: "Optimizaci\xF3n de Transferencias" }, void 0, false, {
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(Link, { to: "/optimizacion-divisas", className: "text-white mr-4", children: "Optimizaci\xF3n de Divisas" }, void 0, false, {
         fileName: "app/components/Nav.tsx",
         lineNumber: 33,
         columnNumber: 15
       }, this),
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(Link, { to: "/optimizacion-divisas", className: "text-white mr-4", children: "Optimizaci\xF3n de Divisas" }, void 0, false, {
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(Link, { to: "/optimizacion-global", className: "text-white mr-4", children: "Optimizaci\xF3n Global" }, void 0, false, {
         fileName: "app/components/Nav.tsx",
         lineNumber: 36,
         columnNumber: 15
@@ -240,4 +240,4 @@ export {
   links,
   meta
 };
-//# sourceMappingURL=/build/root-II2EJ4IF.js.map
+//# sourceMappingURL=/build/root-5F6IQVT2.js.map
